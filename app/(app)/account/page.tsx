@@ -65,7 +65,7 @@ export default function AccountPage() {
   async function handleSignOut() {
     setSignOutLoading(true);
     await supabase.auth.signOut();
-    router.push("/login");
+    router.push("/");
   }
 
   const initials = (displayName || username || email)
