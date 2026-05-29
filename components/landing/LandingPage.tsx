@@ -60,15 +60,15 @@ function SlideHero() {
       </p>
       <div className="flex-1 min-h-0 mt-5 rounded-2xl overflow-hidden relative">
         <img
-          src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=700&q=82&auto=format&fit=crop"
+          src="/images/hero.jpg"
           alt="Couple cooking"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-top"
           loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
         <div className="absolute bottom-4 left-4">
           <div className="bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-sm px-3.5 py-2.5 shadow-lg">
-            <p className="text-xs font-semibold text-foreground">Where are we eating tonight? 🍴</p>
+            <p className="text-xs font-semibold text-foreground">What are we cooking tonight? 🍳</p>
           </div>
         </div>
       </div>
@@ -279,7 +279,8 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="bg-[#FAF6F2] h-dvh flex flex-col overflow-hidden">
+    <div className="bg-[#F0EBE3] min-h-dvh flex flex-col items-center justify-center">
+    <div className="bg-[#FAF6F2] w-full max-w-[430px] h-dvh md:h-[88vh] md:max-h-[860px] flex flex-col overflow-hidden md:rounded-3xl md:shadow-2xl">
 
       {/* ── Header ── */}
       <header className="flex-shrink-0 flex items-center justify-between px-5 h-14 bg-[#FAF6F2]">
@@ -389,6 +390,7 @@ export default function LandingPage() {
         </p>
       </footer>
 
+    </div>
     </div>
   );
 }
