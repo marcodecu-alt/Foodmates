@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { registerAndSubscribe } from "@/lib/pushNotifications";
 
 interface NotificationsContextValue {
   unreadCounts: Record<string, number>; // groupId → unread count
@@ -45,11 +46,19 @@ export function NotificationsProvider({
     groupMap.current = new Map(groups.map((g) => [g.id, g.name]));
   }, [groups]);
 
-  // Request notification permission once (with a short delay so it's not jarring)
+  // Request notification permission + register push subscription
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) return;
-    if (Notification.permission !== "default") return;
-    const t = setTimeout(() => Notification.requestPermission(), 4000);
+
+    async function setupNotifications() {
+      if (Notification.permission === "default") {
+        await Notification.requestPermission();
+      }
+      // Register service worker and subscribe to Web Push
+      await registerAndSubscribe();
+    }
+
+    const t = setTimeout(setupNotifications, 4000);
     return () => clearTimeout(t);
   }, []);
 

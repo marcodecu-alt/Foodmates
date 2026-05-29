@@ -178,6 +178,15 @@ export default function GroupChat({
             : m
         )
       );
+
+      // Fire Web Push to other group members (fire-and-forget)
+      const me = membersMap.current.get(currentUserId);
+      const senderName = me?.display_name ?? me?.username ?? "Someone";
+      fetch("/api/push/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupId, senderId: currentUserId, senderName, content }),
+      }).catch(() => {});
     }
 
     setSending(false);

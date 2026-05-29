@@ -1,8 +1,59 @@
 import { createClient } from "@/lib/supabase/server";
+import { getActiveGroupId } from "@/lib/activeGroup";
 import Link from "next/link";
-import { UtensilsCrossed, BookOpen, Plus } from "lucide-react";
+import { UtensilsCrossed, BookOpen, Plus, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import GroupBanner from "@/components/groups/GroupBanner";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type Activity = {
+  key: string;
+  type: "restaurant_added" | "restaurant_visited" | "recipe_added" | "recipe_cooked";
+  entityId: string;
+  entityName: string;
+  photoReference?: string | null;
+  addedById: string;
+  addedByName: string;
+  date: string;
+  rating?: number | null;
+  cuisine?: string | null;
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function relativeTime(dateStr: string): string {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diffMs / 60000);
+  const h = Math.floor(diffMs / 3600000);
+  const d = Math.floor(diffMs / 86400000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  if (h < 24) return `${h}h ago`;
+  if (d === 1) return "yesterday";
+  if (d < 7) return `${d}d ago`;
+  return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+function actionText(type: Activity["type"], name: string): string {
+  switch (type) {
+    case "restaurant_added":
+      return `added ${name} to the wishlist`;
+    case "restaurant_visited":
+      return `visited ${name}`;
+    case "recipe_added":
+      return `saved ${name} to try`;
+    case "recipe_cooked":
+      return `cooked ${name}`;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 export default async function HomePage() {
   const supabase = createClient();
@@ -10,145 +61,219 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // --- Determine active group ---
   const { data: memberships } = await supabase
     .from("group_members")
-    .select("group_id, groups(id, name), role")
+    .select("group_id")
     .eq("user_id", user!.id);
 
   const groupIds = memberships?.map((m) => m.group_id) ?? [];
+  const cookieGroupId = getActiveGroupId();
+  const activeGroupId = groupIds.find((id) => id === cookieGroupId) ?? groupIds[0] ?? null;
 
-  let hasGroupWithMultipleMembers = false;
-  if (groupIds.length > 0) {
-    const { data: memberCounts } = await supabase
-      .from("group_members")
-      .select("group_id")
-      .in("group_id", groupIds);
-
-    const countByGroup: Record<string, number> = {};
-    memberCounts?.forEach((m) => {
-      countByGroup[m.group_id] = (countByGroup[m.group_id] ?? 0) + 1;
-    });
-    hasGroupWithMultipleMembers = Object.values(countByGroup).some(
-      (c) => c >= 2
+  // --- No group state ---
+  if (!activeGroupId) {
+    return (
+      <div className="container py-10 flex flex-col items-center gap-4 text-center">
+        <UtensilsCrossed className="h-10 w-10 text-muted-foreground" />
+        <h2 className="font-semibold text-xl">No group yet</h2>
+        <p className="text-muted-foreground text-sm max-w-xs">
+          Create or join a group to start tracking restaurants and recipes together.
+        </p>
+        <Button asChild>
+          <Link href="/groups">Get started</Link>
+        </Button>
+      </div>
     );
   }
 
-  const noGroups = groupIds.length === 0;
-
-  const { data: recentRestaurants } = await supabase
+  // --- Fetch data ---
+  const { data: restaurants } = await supabase
     .from("restaurants")
-    .select("id, name, cuisine, status, google_rating, photo_reference")
-    .in("group_id", groupIds.length > 0 ? groupIds : ["none"])
+    .select(
+      "id, name, photo_reference, added_by, created_at, visited_at, status, my_rating, cuisine, profiles:added_by(id, display_name, username)"
+    )
+    .eq("group_id", activeGroupId)
     .order("created_at", { ascending: false })
-    .limit(4);
+    .limit(20);
 
-  const { data: recentRecipes } = await supabase
+  const { data: recipes } = await supabase
     .from("recipes")
-    .select("id, title, cuisine, status, tags")
-    .in("group_id", groupIds.length > 0 ? groupIds : ["none"])
+    .select(
+      "id, title, added_by, created_at, cooked_at, status, cuisine, profiles:added_by(id, display_name, username)"
+    )
+    .eq("group_id", activeGroupId)
     .order("created_at", { ascending: false })
-    .limit(4);
+    .limit(20);
+
+  // --- Build feed ---
+  const activities: Activity[] = [];
+
+  for (const r of restaurants ?? []) {
+    const profile = r.profiles as { id: string; display_name: string | null; username: string | null } | null;
+    const addedById = r.added_by ?? "";
+    const addedByName = profile?.display_name ?? profile?.username ?? "Someone";
+
+    activities.push({
+      key: `restaurant_added_${r.id}`,
+      type: "restaurant_added",
+      entityId: r.id,
+      entityName: r.name,
+      photoReference: r.photo_reference,
+      addedById,
+      addedByName,
+      date: r.created_at,
+      cuisine: r.cuisine,
+    });
+
+    if (r.status === "visited" && r.visited_at) {
+      activities.push({
+        key: `restaurant_visited_${r.id}`,
+        type: "restaurant_visited",
+        entityId: r.id,
+        entityName: r.name,
+        photoReference: r.photo_reference,
+        addedById,
+        addedByName,
+        date: r.visited_at,
+        rating: r.my_rating,
+        cuisine: r.cuisine,
+      });
+    }
+  }
+
+  for (const r of recipes ?? []) {
+    const profile = r.profiles as { id: string; display_name: string | null; username: string | null } | null;
+    const addedById = r.added_by ?? "";
+    const addedByName = profile?.display_name ?? profile?.username ?? "Someone";
+
+    activities.push({
+      key: `recipe_added_${r.id}`,
+      type: "recipe_added",
+      entityId: r.id,
+      entityName: r.title,
+      addedById,
+      addedByName,
+      date: r.created_at,
+      cuisine: r.cuisine,
+    });
+
+    if (r.status === "cooked" && r.cooked_at) {
+      activities.push({
+        key: `recipe_cooked_${r.id}`,
+        type: "recipe_cooked",
+        entityId: r.id,
+        entityName: r.title,
+        addedById,
+        addedByName,
+        date: r.cooked_at,
+        cuisine: r.cuisine,
+      });
+    }
+  }
+
+  activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const feed = activities.slice(0, 30);
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
 
   return (
-    <div className="container py-6 space-y-6">
-      <GroupBanner
-        noGroups={noGroups}
-        hasGroupWithMultipleMembers={hasGroupWithMultipleMembers}
-      />
-
-      <div className="flex gap-3">
-        <Button asChild variant="outline" className="flex-1 sm:flex-none">
+    <div className="container py-6 space-y-5 max-w-2xl">
+      {/* Quick actions */}
+      <div className="flex gap-2">
+        <Button asChild variant="outline" size="sm">
           <Link href="/restaurants">
-            <UtensilsCrossed className="h-4 w-4" />
-            Restaurants
+            <Plus className="h-3.5 w-3.5" />
+            Add restaurant
           </Link>
         </Button>
-        <Button asChild variant="outline" className="flex-1 sm:flex-none">
+        <Button asChild variant="outline" size="sm">
           <Link href="/recipes">
-            <BookOpen className="h-4 w-4" />
-            Recipes
+            <Plus className="h-3.5 w-3.5" />
+            Add recipe
           </Link>
         </Button>
       </div>
 
-      {(recentRestaurants?.length ?? 0) > 0 ? (
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-lg">Recent restaurants</h2>
-            <Link href="/restaurants" className="text-sm text-primary hover:underline">
-              See all
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {recentRestaurants!.map((r) => (
-              <Link
-                key={r.id}
-                href={`/restaurants/${r.id}`}
-                className="rounded-xl border bg-card overflow-hidden hover:shadow-md transition-shadow"
-              >
-                <div className="h-28 bg-muted flex items-center justify-center text-3xl">🍽️</div>
-                <div className="p-3">
-                  <p className="font-medium text-sm truncate">{r.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {r.cuisine ?? "Restaurant"}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : (
-        <section className="rounded-xl border-2 border-dashed p-8 text-center">
-          <UtensilsCrossed className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-          <p className="font-medium">No restaurants yet</p>
-          <p className="text-sm text-muted-foreground mb-4">Start building your wishlist</p>
-          <Button asChild size="sm">
+      {/* Section header */}
+      <div>
+        <h2 className="font-semibold text-lg">Activity</h2>
+        <div className="mt-1 border-b" />
+      </div>
+
+      {/* Feed */}
+      {feed.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+          <UtensilsCrossed className="h-9 w-9 text-muted-foreground" />
+          <p className="font-medium">No activity yet</p>
+          <p className="text-sm text-muted-foreground">Add your first restaurant to get started</p>
+          <Button asChild size="sm" variant="outline">
             <Link href="/restaurants">
               <Plus className="h-4 w-4" />
-              Add a restaurant
+              Add restaurant
             </Link>
           </Button>
-        </section>
-      )}
-
-      {(recentRecipes?.length ?? 0) > 0 ? (
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-lg">Recent recipes</h2>
-            <Link href="/recipes" className="text-sm text-primary hover:underline">
-              See all
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {recentRecipes!.map((r) => (
-              <Link
-                key={r.id}
-                href={`/recipes/${r.id}`}
-                className="rounded-xl border bg-card overflow-hidden hover:shadow-md transition-shadow"
-              >
-                <div className="h-28 bg-muted flex items-center justify-center text-3xl">🍳</div>
-                <div className="p-3">
-                  <p className="font-medium text-sm truncate">{r.title}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {r.cuisine ?? (r.tags?.[0] ?? "Recipe")}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
+        </div>
       ) : (
-        <section className="rounded-xl border-2 border-dashed p-8 text-center">
-          <BookOpen className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-          <p className="font-medium">No recipes yet</p>
-          <p className="text-sm text-muted-foreground mb-4">Clip recipes from any website</p>
-          <Button asChild size="sm">
-            <Link href="/recipes">
-              <Plus className="h-4 w-4" />
-              Add a recipe
-            </Link>
-          </Button>
-        </section>
+        <ul className="space-y-1">
+          {feed.map((item) => {
+            const isRestaurant = item.type === "restaurant_added" || item.type === "restaurant_visited";
+            const href = isRestaurant ? `/restaurants/${item.entityId}` : `/recipes/${item.entityId}`;
+            const actor = item.addedById === user!.id ? "You" : item.addedByName;
+
+            return (
+              <li key={item.key}>
+                <Link
+                  href={href}
+                  className="flex items-start gap-3 rounded-xl p-3 hover:bg-muted/50 transition-colors"
+                >
+                  {/* Thumbnail */}
+                  <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-muted flex items-center justify-center text-2xl">
+                    {isRestaurant && item.photoReference ? (
+                      <img
+                        src={`/api/places/photo?ref=${item.photoReference}`}
+                        alt={item.entityName}
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : isRestaurant ? (
+                      "🍽️"
+                    ) : (
+                      "📖"
+                    )}
+                  </div>
+
+                  {/* Text */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm leading-snug">
+                      <span className="font-semibold">{actor}</span>{" "}
+                      <span className="text-muted-foreground">{actionText(item.type, item.entityName)}</span>
+                    </p>
+
+                    {/* Sub-line: cuisine + rating */}
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {item.cuisine && (
+                        <span className="text-xs text-muted-foreground">{item.cuisine}</span>
+                      )}
+                      {item.type === "restaurant_visited" && item.rating != null && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                          {item.rating}/5
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Time */}
+                    <p className="text-xs text-muted-foreground/70 mt-0.5">{relativeTime(item.date)}</p>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

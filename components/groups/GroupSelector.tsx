@@ -48,7 +48,14 @@ export default function GroupSelector({ groups }: GroupSelectorProps) {
   }
 
   return (
-    <Select value={activeGroupId ?? ""} onValueChange={setActiveGroupId}>
+    <Select
+      value={activeGroupId ?? ""}
+      onValueChange={(id) => {
+        if (id === "__new__") { router.push("/groups/new"); return; }
+        setActiveGroupId(id);
+        router.refresh();
+      }}
+    >
       <SelectTrigger className="w-[180px] h-8 text-sm border-dashed">
         <SelectValue placeholder="Select group" />
       </SelectTrigger>

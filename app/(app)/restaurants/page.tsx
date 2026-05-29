@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getActiveGroupId } from "@/lib/activeGroup";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RestaurantCard from "@/components/restaurants/RestaurantCard";
 import AddRestaurantModal from "@/components/restaurants/AddRestaurantModal";
@@ -114,10 +115,15 @@ export default async function RestaurantsPage() {
 
   const groupIds = memberships?.map((m) => m.group_id) ?? [];
 
+  // Filter by the active group only
+  const cookieGroupId = getActiveGroupId();
+  const activeGroupId =
+    groupIds.find((id) => id === cookieGroupId) ?? groupIds[0] ?? null;
+
   const { data: restaurants } = await supabase
     .from("restaurants")
     .select("*, profiles:added_by(display_name, username)")
-    .in("group_id", groupIds.length > 0 ? groupIds : ["none"])
+    .eq("group_id", activeGroupId ?? "none")
     .order("created_at", { ascending: false });
 
   const all = (restaurants ?? []) as unknown as RestaurantWithProfile[];

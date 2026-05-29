@@ -25,6 +25,10 @@ export function useActiveGroup() {
     // Sync in case localStorage was updated before this component mounted
     const stored = getStoredId();
     if (stored !== activeGroupId) setActiveGroupIdState(stored);
+    // Ensure cookie is in sync with localStorage on first load
+    if (stored && !document.cookie.includes(ACTIVE_GROUP_KEY)) {
+      document.cookie = `${ACTIVE_GROUP_KEY}=${stored}; path=/; max-age=31536000; SameSite=Lax`;
+    }
     return () => {
       listeners.delete(handler);
     };
@@ -34,8 +38,11 @@ export function useActiveGroup() {
   function setActiveGroupId(id: string | null) {
     if (id) {
       localStorage.setItem(ACTIVE_GROUP_KEY, id);
+      // Sync to cookie so server components can read the active group
+      document.cookie = `${ACTIVE_GROUP_KEY}=${id}; path=/; max-age=31536000; SameSite=Lax`;
     } else {
       localStorage.removeItem(ACTIVE_GROUP_KEY);
+      document.cookie = `${ACTIVE_GROUP_KEY}=; path=/; max-age=0`;
     }
     // Notify all hook instances
     listeners.forEach((l) => l(id));

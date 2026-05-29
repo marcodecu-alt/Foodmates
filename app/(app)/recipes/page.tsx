@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getActiveGroupId } from "@/lib/activeGroup";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RecipeCard from "@/components/recipes/RecipeCard";
 import AddRecipeModal from "@/components/recipes/AddRecipeModal";
@@ -18,10 +19,15 @@ export default async function RecipesPage() {
 
   const groupIds = memberships?.map((m) => m.group_id) ?? [];
 
+  // Filter by the active group only
+  const cookieGroupId = getActiveGroupId();
+  const activeGroupId =
+    groupIds.find((id) => id === cookieGroupId) ?? groupIds[0] ?? null;
+
   const { data: recipes } = await supabase
     .from("recipes")
     .select("*")
-    .in("group_id", groupIds.length > 0 ? groupIds : ["none"])
+    .eq("group_id", activeGroupId ?? "none")
     .order("created_at", { ascending: false });
 
   const wishlist = (recipes ?? []).filter((r) => r.status === "wishlist");

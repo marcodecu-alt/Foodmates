@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, UtensilsCrossed, BookOpen, Users, LogOut, User } from "lucide-react";
+import { Home, UtensilsCrossed, BookOpen, Users, LogOut, User, MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import GroupSelector from "@/components/groups/GroupSelector";
@@ -13,8 +13,9 @@ interface AppNavProps {
 }
 
 const navItems = [
-  { href: "/", label: "Home", icon: Home },
+  { href: "/home", label: "Home", icon: Home },
   { href: "/restaurants", label: "Restaurants", icon: UtensilsCrossed },
+  { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/recipes", label: "Recipes", icon: BookOpen },
   { href: "/groups", label: "Groups", icon: Users },
 ];
@@ -62,7 +63,7 @@ export default function AppNav({ groups }: AppNavProps) {
                 )}
               >
                 {label}
-                {href === "/groups" && totalUnread > 0 && (
+                {href === "/chat" && totalUnread > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[16px] h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold px-1">
                     {totalUnread > 9 ? "9+" : totalUnread}
                   </span>
@@ -100,14 +101,14 @@ export default function AppNav({ groups }: AppNavProps) {
               href={href}
               className={cn(
                 "flex-1 flex flex-col items-center gap-1 py-2 text-xs font-medium transition-colors",
-                pathname === href || (href !== "/" && pathname.startsWith(href))
+                pathname === href || (href !== "/home" && pathname.startsWith(href))
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <div className="relative">
                 <Icon className="h-5 w-5" />
-                {href === "/groups" && totalUnread > 0 && (
+                {href === "/chat" && totalUnread > 0 && (
                   <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-primary border-2 border-background" />
                 )}
               </div>
