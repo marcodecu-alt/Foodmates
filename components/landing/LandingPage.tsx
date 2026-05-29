@@ -60,7 +60,7 @@ function SlideHero() {
       </p>
       <div className="flex-1 min-h-0 mt-5 rounded-2xl overflow-hidden relative">
         <img
-          src="/images/hero.jpg"
+          src="/images/hero.png"
           alt="Couple cooking"
           className="w-full h-full object-cover object-top"
           loading="eager"
