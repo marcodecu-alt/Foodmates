@@ -69,6 +69,34 @@ export default function GroupChat({
     membersMap.current = new Map(members.map((m) => [m.id, m]));
   }, [members]);
 
+  // Load messages from client side on mount (reliable, uses authenticated session)
+  useEffect(() => {
+    async function loadMessages() {
+      const { data, error } = await supabase.current
+        .from("messages")
+        .select("id, group_id, sender_id, content, created_at")
+        .eq("group_id", groupId)
+        .order("created_at", { ascending: true })
+        .limit(50);
+
+      console.log("Chat: groupId =", groupId, "| rows =", data?.length, "| error =", error);
+      if (error) {
+        console.error("Error loading messages:", error);
+        return;
+      }
+      if (data) {
+        setMessages(
+          data.map((m) => ({
+            ...m,
+            profiles: membersMap.current.get(m.sender_id) ?? null,
+          }))
+        );
+        initialCount.current = data.length;
+      }
+    }
+    loadMessages();
+  }, [groupId]);
+
   // Mark this group's messages as read whenever chat is visible
   useEffect(() => {
     markGroupRead(groupId);

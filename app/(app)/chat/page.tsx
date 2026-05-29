@@ -5,6 +5,8 @@ import GroupChat, { type ChatMessage, type ChatMember } from "@/components/group
 import Link from "next/link";
 import { Users } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function ChatPage() {
   const supabase = createClient();
 
@@ -60,29 +62,28 @@ export default async function ChatPage() {
     .map((m) => m.profiles as unknown as ChatMember | null)
     .filter(Boolean) as ChatMember[];
 
-  // Load last 50 messages
+  // Load last 50 messages (no join — profiles resolved client-side via membersMap)
+  const membersMap = new Map(members.map((m) => [m.id, m]));
   let initialMessages: ChatMessage[] = [];
-  try {
-    const { data: msgs } = await supabase
-      .from("messages")
-      .select(
-        "id, group_id, sender_id, content, created_at, profiles:sender_id(id, username, display_name)"
-      )
-      .eq("group_id", activeGroupId)
-      .order("created_at", { ascending: true })
-      .limit(50);
+  const { data: msgs, error: msgsError } = await supabase
+    .from("messages")
+    .select("id, group_id, sender_id, content, created_at")
+    .eq("group_id", activeGroupId)
+    .order("created_at", { ascending: true })
+    .limit(50);
 
-    initialMessages = (msgs ?? []).map((m) => ({
-      id: m.id,
-      group_id: m.group_id,
-      sender_id: m.sender_id,
-      content: m.content,
-      created_at: m.created_at,
-      profiles: m.profiles as unknown as ChatMember | null,
-    }));
-  } catch {
-    // messages table may not exist yet
+  if (msgsError) {
+    console.error("Failed to load messages:", msgsError);
   }
+
+  initialMessages = (msgs ?? []).map((m) => ({
+    id: m.id,
+    group_id: m.group_id,
+    sender_id: m.sender_id,
+    content: m.content,
+    created_at: m.created_at,
+    profiles: membersMap.get(m.sender_id) ?? null,
+  }));
 
   return (
     <div className="flex flex-col h-[calc(100dvh-124px)] md:h-[calc(100dvh-56px)]">
