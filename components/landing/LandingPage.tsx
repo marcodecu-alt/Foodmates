@@ -84,44 +84,49 @@ function SlideHero() {
 
 function SlideSave() {
   return (
-    <div className="flex flex-col h-full p-6 bg-white">
-      <NumBadge n="02" />
-      <div className="mt-4">
-        <h2 style={{ fontFamily: "var(--font-fraunces)" }} className="text-[1.9rem] font-bold leading-tight text-foreground">
+    <div className="flex flex-col h-full bg-white">
+      <div className="px-6 pt-6 pb-4">
+        <NumBadge n="02" />
+        <h2 style={{ fontFamily: "var(--font-fraunces)" }} className="text-[1.9rem] font-bold leading-tight text-foreground mt-4">
           Save from<br />anywhere
         </h2>
-      </div>
-      <p className="text-sm text-muted-foreground leading-relaxed mt-3">
-        Clip recipes from any website, Instagram, TikTok or blog in one click.
-      </p>
-      <div className="flex gap-2 mt-4">
-        {[<Link2 className="h-4 w-4 text-muted-foreground" key="link" />, <InstagramIcon key="ig" />, <TikTokIcon key="tt" />, <svg key="web" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="text-muted-foreground"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>].map((icon, i) => (
-          <div key={i} className="w-11 h-11 rounded-xl border border-border bg-muted/30 flex items-center justify-center">{icon}</div>
-        ))}
-      </div>
-      <div className="flex-1 min-h-0 mt-4 rounded-xl border border-border overflow-hidden flex flex-col shadow-sm bg-white">
-        <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-border bg-[#F5F4F2]">
-          <div className="w-2 h-2 rounded-full bg-red-400/70" /><div className="w-2 h-2 rounded-full bg-amber-400/70" /><div className="w-2 h-2 rounded-full bg-green-400/70" />
-          <div className="flex-1 ml-2 bg-white rounded-md text-[10px] text-muted-foreground px-2 py-1 truncate border border-border/40">
-            www.giallozafferano.it/ricette/carbonara
-          </div>
+        <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+          Clip recipes from any website, Instagram or blog in one tap.
+        </p>
+        <div className="flex gap-2 mt-4">
+          {[
+            <Link2 className="h-4 w-4 text-muted-foreground" key="link" />,
+            <InstagramIcon key="ig" />,
+            <TikTokIcon key="tt" />,
+            <svg key="web" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="text-muted-foreground"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
+          ].map((icon, i) => (
+            <div key={i} className="w-10 h-10 rounded-xl border border-border bg-muted/30 flex items-center justify-center">{icon}</div>
+          ))}
         </div>
-        <div className="flex-1 p-4 flex flex-col gap-3 relative overflow-hidden">
-          <div className="absolute inset-0 pt-4 px-4 space-y-2 pointer-events-none opacity-[0.06]">
-            <div className="h-3 rounded bg-foreground w-3/4" /><div className="h-2.5 rounded bg-foreground w-1/2" /><div className="h-20 rounded bg-foreground mt-2" />
-          </div>
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 bg-primary text-white text-xs font-semibold rounded-xl px-3.5 py-2 w-fit shadow-md">
-              <Logo size={13} /><span>Save to Foodmates</span>
+      </div>
+
+      {/* Big food photo with save card floating over */}
+      <div className="flex-1 min-h-0 mx-5 mb-5 rounded-2xl overflow-hidden relative shadow-md">
+        <img
+          src="https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=700&q=85&auto=format&fit=crop"
+          alt="Carbonara"
+          className="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+        {/* Floating save card */}
+        <div className="absolute bottom-4 left-4 right-4">
+          <div className="bg-white rounded-2xl p-3 shadow-xl flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0">
+              <img src="https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=100&q=80&auto=format&fit=crop" alt="" className="w-full h-full object-cover" />
             </div>
-          </div>
-          <div className="relative z-10 flex gap-3 items-center">
-            <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
-              <img src="https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=120&q=80&auto=format&fit=crop" alt="Carbonara" className="w-full h-full object-cover" loading="lazy" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-foreground">Spaghetti alla Carbonara</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-foreground truncate">Spaghetti alla Carbonara</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">15 min · Easy</p>
+            </div>
+            <div className="flex items-center gap-1.5 bg-primary text-white rounded-xl px-3 py-2 flex-shrink-0">
+              <Logo size={11} />
+              <span className="text-[11px] font-semibold">Save</span>
             </div>
           </div>
         </div>
@@ -131,25 +136,20 @@ function SlideSave() {
 }
 
 const ORGANIZE_ITEMS = [
-  { name: "Padella Borough Market", sub: "London", img: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=220&q=80&auto=format&fit=crop" },
-  { name: "10 Greek Street", sub: "London", img: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=220&q=80&auto=format&fit=crop" },
-  { name: "Cacio e Pepe", sub: "20 min · Easy", img: "https://images.unsplash.com/photo-1551183053-bf91798d047b?w=220&q=80&auto=format&fit=crop" },
-  { name: "Tiramisù", sub: "30 min · Medium", img: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=220&q=80&auto=format&fit=crop" },
+  { name: "Padella Borough Market", sub: "London", img: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=300&q=85&auto=format&fit=crop" },
+  { name: "10 Greek Street", sub: "London", img: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=300&q=85&auto=format&fit=crop" },
+  { name: "Cacio e Pepe", sub: "20 min · Easy", img: "https://images.unsplash.com/photo-1551183053-bf91798d047b?w=300&q=85&auto=format&fit=crop" },
+  { name: "Tiramisù", sub: "30 min · Medium", img: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=300&q=85&auto=format&fit=crop" },
 ];
 
 function SlideOrganize() {
   return (
-    <div className="flex flex-col h-full p-6 bg-[#FAF6F2]">
+    <div className="flex flex-col h-full p-5 bg-[#FAF6F2]">
       <NumBadge n="03" />
-      <div className="mt-4">
-        <h2 style={{ fontFamily: "var(--font-fraunces)" }} className="text-[1.9rem] font-bold leading-tight text-foreground">
-          Organize what<br />you love
-        </h2>
-      </div>
-      <p className="text-sm text-muted-foreground leading-relaxed mt-3">
-        Keep all your restaurants and recipes beautifully organized and easy to find.
-      </p>
-      <div className="flex gap-2 mt-4">
+      <h2 style={{ fontFamily: "var(--font-fraunces)" }} className="text-[1.9rem] font-bold leading-tight text-foreground mt-4">
+        Organize what<br />you love
+      </h2>
+      <div className="flex gap-2 mt-3">
         <span className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-full bg-primary text-white">
           <UtensilsCrossed className="h-3 w-3" />Restaurants
         </span>
@@ -157,15 +157,18 @@ function SlideOrganize() {
           <BookOpen className="h-3 w-3" />Recipes
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-2 mt-4 flex-1 content-start">
+      <div className="grid grid-cols-2 gap-2.5 mt-3 flex-1 content-start">
         {ORGANIZE_ITEMS.map((item) => (
-          <div key={item.name} className="rounded-xl border border-border bg-white overflow-hidden shadow-sm">
-            <div className="h-[68px] overflow-hidden">
+          <div key={item.name} className="rounded-2xl bg-white overflow-hidden shadow-sm border border-border/40">
+            <div className="h-24 overflow-hidden relative">
               <img src={item.img} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/90 shadow flex items-center justify-center">
+                <HeartIcon className="h-3 w-3 text-primary" />
+              </div>
             </div>
-            <div className="px-2.5 py-2 flex items-start justify-between gap-1">
-              <div><p className="text-[11px] font-semibold text-foreground leading-tight">{item.name}</p><p className="text-[10px] text-muted-foreground mt-0.5">{item.sub}</p></div>
-              <HeartIcon className="h-3.5 w-3.5 text-primary flex-shrink-0 mt-0.5" />
+            <div className="px-3 py-2.5">
+              <p className="text-[11px] font-bold text-foreground leading-tight">{item.name}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{item.sub}</p>
             </div>
           </div>
         ))}
@@ -182,53 +185,47 @@ const AVATARS = [
 
 function SlideShare() {
   return (
-    <div className="flex flex-col h-full p-6 bg-white">
-      <NumBadge n="04" />
-      <div className="mt-4">
-        <h2 style={{ fontFamily: "var(--font-fraunces)" }} className="text-[1.9rem] font-bold leading-tight text-foreground">
+    <div className="relative h-full overflow-hidden">
+      {/* Full-bleed restaurant photo */}
+      <img
+        src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=85&auto=format&fit=crop"
+        alt="Restaurant"
+        className="absolute inset-0 w-full h-full object-cover"
+        loading="lazy"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/10 to-black/80" />
+
+      {/* Top: badge + avatar stack */}
+      <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
+        <NumBadge n="04" dark />
+        <div className="flex items-center">
+          {AVATARS.map((src, i) => (
+            <div key={i} className="w-9 h-9 rounded-full border-2 border-white overflow-hidden shadow-sm" style={{ marginLeft: i > 0 ? "-8px" : "0" }}>
+              <img src={src} alt="Member" className="w-full h-full object-cover" loading="lazy" />
+            </div>
+          ))}
+          <div className="w-8 h-8 rounded-full border-2 border-dashed border-white/50 flex items-center justify-center text-white text-xs font-bold ml-1.5">+</div>
+        </div>
+      </div>
+
+      {/* Middle: chat bubble */}
+      <div className="absolute left-6" style={{ top: "42%" }}>
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl rounded-tl-sm px-4 py-3 shadow-xl max-w-[200px]">
+          <p className="text-xs font-semibold text-foreground">&ldquo;Let&apos;s go here this Saturday?&rdquo; ♥</p>
+        </div>
+        <div className="w-7 h-7 rounded-full overflow-hidden border-2 border-white shadow mt-2 ml-auto">
+          <img src={AVATARS[1]} alt="" className="w-full h-full object-cover" />
+        </div>
+      </div>
+
+      {/* Bottom: text */}
+      <div className="absolute bottom-0 left-0 right-0 p-6 pb-7">
+        <h2 style={{ fontFamily: "var(--font-fraunces)" }} className="text-[1.9rem] font-bold leading-tight text-white">
           Share and decide<br />together
         </h2>
-      </div>
-      <p className="text-sm text-muted-foreground leading-relaxed mt-3">
-        Create a space for just you two, or invite your partner, friends or family.
-      </p>
-      <div className="flex items-center mt-4">
-        {AVATARS.map((src, i) => (
-          <div key={i} className="w-11 h-11 rounded-full border-2 border-white overflow-hidden shadow-sm" style={{ marginLeft: i > 0 ? "-10px" : "0" }}>
-            <img src={src} alt="Member" className="w-full h-full object-cover" loading="lazy" />
-          </div>
-        ))}
-        <div className="w-9 h-9 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center text-muted-foreground text-sm font-medium ml-2">+</div>
-      </div>
-      <div className="flex items-end gap-2 mt-4">
-        <div className="bg-[#F0F6F2] rounded-2xl rounded-bl-sm px-4 py-3 flex-1 max-w-[200px]">
-          <p className="text-xs font-medium text-foreground leading-snug">&ldquo;Let&apos;s go here this Saturday?&rdquo; ♥</p>
-        </div>
-        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border-2 border-white shadow-sm">
-          <img src={AVATARS[1]} alt="" className="w-full h-full object-cover" loading="lazy" />
-        </div>
-      </div>
-      <div className="flex-1 min-h-0 mt-4 rounded-2xl border border-border bg-white overflow-hidden shadow-sm">
-        <div className="h-[38%] min-h-[100px] overflow-hidden">
-          <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&q=82&auto=format&fit=crop" alt="Restaurant" className="w-full h-full object-cover" loading="lazy" />
-        </div>
-        <div className="p-3 flex items-start justify-between gap-2">
-          <div>
-            <p style={{ fontFamily: "var(--font-fraunces)" }} className="text-sm font-semibold text-foreground leading-tight">L&apos;Antica Pizzeria<br />da Michele</p>
-            <p className="text-xs text-muted-foreground mt-1">Naples</p>
-          </div>
-          <div className="flex gap-1 flex-shrink-0">
-            <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center">
-              <svg className="h-3.5 w-3.5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
-            </div>
-            <div className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center">
-              <HeartIcon className="h-3.5 w-3.5 text-primary" />
-            </div>
-            <div className="w-7 h-7 rounded-full bg-amber-50 flex items-center justify-center">
-              <svg className="h-3.5 w-3.5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
-            </div>
-          </div>
-        </div>
+        <p className="text-sm text-white/75 leading-relaxed mt-2">
+          Invite your partner, friends or family and plan meals together.
+        </p>
       </div>
     </div>
   );
