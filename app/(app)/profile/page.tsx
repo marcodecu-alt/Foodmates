@@ -74,11 +74,11 @@ export default function ProfilePage() {
 
     const { error } = await supabase
       .from("profiles")
-      .update({
+      .upsert({
+        id: user.id,
         username: username.trim().toLowerCase(),
         display_name: displayName.trim() || null,
-      })
-      .eq("id", user.id);
+      });
 
     if (error) {
       if (error.code === "23505") {
