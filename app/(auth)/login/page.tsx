@@ -165,6 +165,9 @@ function LoginForm() {
             <span style={{fontFamily: "var(--font-fraunces)"}} className="text-2xl font-bold text-foreground">Foodmates</span>
           </div>
           <p className="text-muted-foreground text-sm text-center">Your private culinary space —<br/>even better when shared.</p>
+          <Link href="/" className="text-xs text-primary hover:underline mt-1">
+            ← See how it works
+          </Link>
         </div>
 
         {/* Password reset success banner */}
