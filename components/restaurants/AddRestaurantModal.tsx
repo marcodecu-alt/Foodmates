@@ -16,9 +16,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import RestaurantSearch from "./RestaurantSearch";
-import { Plus, PencilLine } from "lucide-react";
+import { Plus, PencilLine, Camera, X } from "lucide-react";
 import { useActiveGroup } from "@/lib/hooks/useActiveGroup";
 import { getOrCreatePersonalGroup } from "@/lib/hooks/useOrCreateGroup";
+import StarRating from "@/components/shared/StarRating";
 
 interface PlaceDetails {
   place_id: string;
@@ -45,6 +46,8 @@ export default function AddRestaurantModal() {
   const [city, setCity] = useState("");
   const [status, setStatus] = useState<"wishlist" | "visited">("wishlist");
   const [manualMode, setManualMode] = useState(false);
+  const [myRating, setMyRating] = useState<number | null>(null);
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const [form, setForm] = useState<Partial<PlaceDetails> & { notes: string }>({
     notes: "",
   });
@@ -101,33 +104,59 @@ export default function AddRestaurantModal() {
       }
     }
 
-    const { error } = await supabase.from("restaurants").insert({
-      group_id: groupId,
-      added_by: user.id,
-      place_id: placeId,
-      name: form.name!,
-      address: form.address ?? null,
-      lat: form.lat ?? null,
-      lng: form.lng ?? null,
-      cuisine: form.cuisine ?? null,
-      price_level: form.price_level ?? null,
-      google_rating: form.rating ?? null,
-      photo_reference: form.photo_reference ?? null,
-      website: form.website ?? null,
-      phone: form.phone ?? null,
-      notes: form.notes || null,
-      status,
-      visited_at: status === "visited" ? new Date().toISOString() : null,
-    });
+    const { data: inserted, error } = await supabase
+      .from("restaurants")
+      .insert({
+        group_id: groupId,
+        added_by: user.id,
+        place_id: placeId,
+        name: form.name!,
+        address: form.address ?? null,
+        lat: form.lat ?? null,
+        lng: form.lng ?? null,
+        cuisine: form.cuisine ?? null,
+        price_level: form.price_level ?? null,
+        google_rating: form.rating ?? null,
+        photo_reference: form.photo_reference ?? null,
+        website: form.website ?? null,
+        phone: form.phone ?? null,
+        notes: form.notes || null,
+        my_rating: myRating,
+        status,
+        visited_at: status === "visited" ? new Date().toISOString() : null,
+      })
+      .select("id")
+      .single();
 
     if (error) {
       setError(error.message);
     } else {
+      // Upload any queued photos
+      if (pendingPhotos.length > 0 && inserted?.id) {
+        for (const file of pendingPhotos) {
+          const ext = file.name.split(".").pop();
+          const path = `${user.id}/restaurant/${inserted.id}/${Date.now()}.${ext}`;
+          const { error: uploadErr } = await supabase.storage
+            .from("media")
+            .upload(path, file, { contentType: file.type });
+          if (!uploadErr) {
+            await supabase.from("restaurant_media").insert({
+              restaurant_id: inserted.id,
+              uploaded_by: user.id,
+              storage_path: path,
+              type: "photo",
+            });
+          }
+        }
+      }
+
       setOpen(false);
       setForm({ notes: "" });
       setCity("");
       setStatus("wishlist");
       setManualMode(false);
+      setMyRating(null);
+      setPendingPhotos([]);
       router.refresh();
     }
     setLoading(false);
@@ -223,16 +252,65 @@ export default function AddRestaurantModal() {
       )}
 
       {(form.name || manualMode) && (
-        <div className="space-y-1.5">
-          <Label htmlFor="notes">Notes (optional)</Label>
-          <Textarea
-            id="notes"
-            placeholder={status === "visited" ? "How was it?" : "Why do you want to try this place?"}
-            value={form.notes}
-            onChange={(e) => updateField("notes", e.target.value)}
-            rows={3}
-          />
-        </div>
+        <>
+          {/* Rating */}
+          <div className="space-y-1.5">
+            <Label>My rating (optional)</Label>
+            <StarRating value={myRating} onChange={setMyRating} />
+          </div>
+
+          {/* Review */}
+          <div className="space-y-1.5">
+            <Label htmlFor="notes">Review (optional)</Label>
+            <Textarea
+              id="notes"
+              placeholder={status === "visited" ? "How was it? Any dishes to recommend?" : "Why do you want to try this place?"}
+              value={form.notes}
+              onChange={(e) => updateField("notes", e.target.value)}
+              rows={3}
+            />
+          </div>
+
+          {/* Photos */}
+          <div className="space-y-1.5">
+            <Label>Photos (optional)</Label>
+            <label className="flex items-center gap-2 cursor-pointer w-fit text-sm text-muted-foreground hover:text-foreground transition-colors border border-dashed border-border rounded-xl px-4 py-2.5 hover:bg-muted/50">
+              <Camera className="h-4 w-4" />
+              Add photos
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) {
+                    setPendingPhotos((prev) => [...prev, ...Array.from(e.target.files!)]);
+                  }
+                }}
+              />
+            </label>
+            {pendingPhotos.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {pendingPhotos.map((file, i) => (
+                  <div key={i} className="relative">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt=""
+                      className="w-16 h-16 rounded-lg object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPendingPhotos((prev) => prev.filter((_, j) => j !== i))}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center shadow"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
