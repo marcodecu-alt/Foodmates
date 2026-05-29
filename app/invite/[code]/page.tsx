@@ -77,7 +77,7 @@ export default async function InvitePage({
                 </Button>
               </div>
             ) : user ? (
-              <JoinGroupButton groupId={group.id} inviteCode={params.code} />
+              <JoinGroupButton groupId={group.id} inviteCode={params.code} groupName={group.name} />
             ) : (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">
