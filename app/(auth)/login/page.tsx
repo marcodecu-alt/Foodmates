@@ -25,6 +25,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const resetSuccess = searchParams.get("reset") === "success";
 
+  const next = searchParams.get("next") ?? "/home";
   const [mode, setMode] = useState<Mode>(
     searchParams.get("tab") === "signup" ? "signup" : "signin"
   );
@@ -67,7 +68,7 @@ function LoginForm() {
         setError(error.message);
       } else if (data.session) {
         // Email confirmation is disabled — signed in immediately
-        router.push("/home");
+        router.push(next);
         router.refresh();
       } else {
         // Email confirmation is enabled — ask user to check inbox
@@ -86,7 +87,7 @@ function LoginForm() {
             : error.message
         );
       } else {
-        router.push("/home");
+        router.push(next);
         router.refresh();
       }
     }
