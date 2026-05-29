@@ -19,9 +19,9 @@ function Logo({ size = 28 }: { size?: number }) {
   );
 }
 
-function NumBadge({ n }: { n: string }) {
+function NumBadge({ n, dark }: { n: string; dark?: boolean }) {
   return (
-    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-primary text-primary text-xs font-bold flex-shrink-0">
+    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full border-2 text-xs font-bold flex-shrink-0 ${dark ? "border-white/70 text-white" : "border-primary text-primary"}`}>
       {n}
     </span>
   );
@@ -45,29 +45,35 @@ function TikTokIcon() {
 /* ─── Slide content components ─── */
 function SlideHero() {
   return (
-    <div className="flex flex-col h-full p-6 bg-[#FAF6F2]">
-      <NumBadge n="01" />
-      <div className="mt-4">
-        <h2 style={{ fontFamily: "var(--font-fraunces)" }} className="text-[1.9rem] font-bold leading-tight text-foreground">
+    <div className="relative h-full overflow-hidden">
+      {/* Full-bleed background photo */}
+      <img
+        src="/images/hero.png"
+        alt="Couple cooking"
+        className="absolute inset-0 w-full h-full object-cover object-center"
+        loading="eager"
+      />
+      {/* Gradient: light scrim at top, heavy at bottom for text legibility */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/80" />
+
+      {/* Top badge */}
+      <div className="absolute top-6 left-6">
+        <NumBadge n="01" dark />
+      </div>
+
+      {/* Bottom text */}
+      <div className="absolute bottom-0 left-0 right-0 p-6 pb-7">
+        <h2 style={{ fontFamily: "var(--font-fraunces)" }} className="text-[1.9rem] font-bold leading-tight text-white">
           Your private<br />culinary space
         </h2>
-        <p style={{ fontFamily: "var(--font-fraunces)" }} className="text-base text-primary italic mt-2 leading-snug font-medium">
+        <p style={{ fontFamily: "var(--font-fraunces)" }} className="text-base text-orange-200 italic mt-1.5 leading-snug font-medium">
           Made for couples.<br />Perfect for any group.
         </p>
-      </div>
-      <p className="text-sm text-muted-foreground leading-relaxed mt-3">
-        Save, organize and discover restaurants and recipes — all in one private space.
-      </p>
-      <div className="flex-1 min-h-0 mt-5 rounded-2xl overflow-hidden relative">
-        <img
-          src="/images/hero.png"
-          alt="Couple cooking"
-          className="w-full h-full object-cover object-top"
-          loading="eager"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-        <div className="absolute bottom-4 left-4">
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-sm px-3.5 py-2.5 shadow-lg">
+        <p className="text-sm text-white/75 leading-relaxed mt-2">
+          Save, organize and discover restaurants and recipes — all in one private space.
+        </p>
+        <div className="mt-4">
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-sm px-3.5 py-2.5 shadow-lg w-fit">
             <p className="text-xs font-semibold text-foreground">What are we cooking tonight? 🍳</p>
           </div>
         </div>
