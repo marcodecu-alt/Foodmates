@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveGroupId } from "@/lib/activeGroup";
 import Link from "next/link";
-import { UtensilsCrossed, BookOpen, Plus, Star } from "lucide-react";
+import { UtensilsCrossed, Plus, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // ---------------------------------------------------------------------------

@@ -79,7 +79,7 @@ export default function NewGroupPage() {
                 <CheckCircle className="h-6 w-6 text-primary" />
               </div>
             </div>
-            <CardTitle>"{name}" is ready!</CardTitle>
+            <CardTitle>&ldquo;{name}&rdquo; is ready!</CardTitle>
             <CardDescription>
               Share this link so others can join your group
             </CardDescription>

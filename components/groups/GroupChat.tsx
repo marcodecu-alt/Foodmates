@@ -85,7 +85,8 @@ export default function GroupChat({
 
   // Realtime subscription for incoming messages
   useEffect(() => {
-    const channel = supabase.current
+    const client = supabase.current;
+    const channel = client
       .channel(`chat-${groupId}`)
       .on(
         "postgres_changes",
@@ -125,7 +126,7 @@ export default function GroupChat({
       .subscribe();
 
     return () => {
-      supabase.current.removeChannel(channel);
+      client.removeChannel(channel);
     };
   }, [groupId, currentUserId, markGroupRead]);
 
