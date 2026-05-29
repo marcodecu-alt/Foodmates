@@ -1,0 +1,23 @@
+{
+  "name": "Foodmates",
+  "short_name": "Foodmates",
+  "description": "Your private culinary scrapbook",
+  "start_url": "/home",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#E05835",
+  "icons": [
+    {
+      "src": "/apple-icon",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon",
+      "sizes": "32x32",
+      "type": "image/png"
+    }
+  ]
+}
