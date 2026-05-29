@@ -79,7 +79,6 @@ export default function GroupChat({
         .order("created_at", { ascending: true })
         .limit(50);
 
-      console.log("Chat: groupId =", groupId, "| rows =", data?.length, "| error =", error);
       if (error) {
         console.error("Error loading messages:", error);
         return;

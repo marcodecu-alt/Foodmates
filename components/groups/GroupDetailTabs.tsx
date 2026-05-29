@@ -36,7 +36,7 @@ export default function GroupDetailTabs({
   initialMessages,
   currentUserId,
 }: Props) {
-  const [tab, setTab] = useState<Tab>("chat");
+  const [tab, setTab] = useState<Tab>("members");
   const { unreadCounts } = useNotifications();
   const unread = unreadCounts[group.id] ?? 0;
 
