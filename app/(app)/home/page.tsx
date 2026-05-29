@@ -3,6 +3,7 @@ import { getActiveGroupId } from "@/lib/activeGroup";
 import Link from "next/link";
 import { UtensilsCrossed, Plus, Star, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import FeedPhotoLightbox from "@/components/shared/FeedPhotoLightbox";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -373,10 +374,10 @@ export default async function HomePage() {
                   {/* Thumbnail */}
                   <div className="shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-muted flex items-center justify-center text-3xl">
                     {isPhoto && item.storagePath ? (
-                      <img
+                      <FeedPhotoLightbox
                         src={mediaPublicUrl(supabaseUrl, item.storagePath)}
                         alt={item.caption ?? item.entityName}
-                        className="w-full h-full object-cover"
+                        caption={item.caption}
                       />
                     ) : isRestaurant && item.photoReference ? (
                       <img
