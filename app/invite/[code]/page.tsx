@@ -99,7 +99,7 @@ export default async function InvitePage({
                 </p>
                 <Button asChild className="w-full">
                   <Link
-                    href={`/login?next=/invite/${params.code}`}
+                    href={`/?next=/invite/${params.code}`}
                   >
                     Sign in to join
                   </Link>

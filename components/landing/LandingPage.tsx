@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Link2, BookOpen, UtensilsCrossed } from "lucide-react";
 
@@ -238,6 +239,11 @@ const SLIDES = [SlideHero, SlideSave, SlideOrganize, SlideShare];
 const TOTAL = SLIDES.length;
 
 export default function LandingPage() {
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "";
+  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
+  const signupHref = next ? `/login?tab=signup&next=${encodeURIComponent(next)}` : "/login?tab=signup";
+
   const [current, setCurrent] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerW, setContainerW] = useState(375);
@@ -375,13 +381,13 @@ export default function LandingPage() {
         {/* CTA row */}
         <div className="flex items-center gap-3 w-full max-w-sm">
           <Link
-            href="/login"
+            href={loginHref}
             className="flex-1 py-3.5 rounded-2xl border border-foreground/20 text-center text-sm font-semibold text-foreground hover:bg-foreground/5 transition-colors"
           >
             Log in
           </Link>
           <Link
-            href="/login?tab=signup"
+            href={signupHref}
             className="flex-1 py-3.5 rounded-2xl bg-primary text-white text-center text-sm font-semibold hover:bg-primary/90 active:bg-primary/80 transition-colors shadow-sm"
           >
             Sign up
