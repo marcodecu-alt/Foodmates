@@ -38,19 +38,6 @@ function relativeTime(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-function actionText(type: Activity["type"], name: string): string {
-  switch (type) {
-    case "restaurant_added":
-      return `added ${name} to the wishlist`;
-    case "restaurant_visited":
-      return `visited ${name}`;
-    case "recipe_added":
-      return `saved ${name} to try`;
-    case "recipe_cooked":
-      return `cooked ${name}`;
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------

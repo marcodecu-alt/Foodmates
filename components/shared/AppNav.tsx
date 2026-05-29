@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Home, UtensilsCrossed, BookOpen, Users, User, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import GroupSelector from "@/components/groups/GroupSelector";
@@ -22,7 +22,6 @@ const navItems = [
 
 export default function AppNav({ groups }: AppNavProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { totalUnread } = useNotifications();
 
   return (
