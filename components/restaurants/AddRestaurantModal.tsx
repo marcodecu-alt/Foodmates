@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import RestaurantSearch from "./RestaurantSearch";
-import { Plus } from "lucide-react";
+import { Plus, PencilLine } from "lucide-react";
 import { useActiveGroup } from "@/lib/hooks/useActiveGroup";
 import { getOrCreatePersonalGroup } from "@/lib/hooks/useOrCreateGroup";
 
@@ -44,6 +44,7 @@ export default function AddRestaurantModal() {
 
   const [city, setCity] = useState("");
   const [status, setStatus] = useState<"wishlist" | "visited">("wishlist");
+  const [manualMode, setManualMode] = useState(false);
   const [form, setForm] = useState<Partial<PlaceDetails> & { notes: string }>({
     notes: "",
   });
@@ -57,7 +58,11 @@ export default function AddRestaurantModal() {
   }
 
   async function handleSave() {
-    if (!form.name || !form.place_id) {
+    if (!form.name) {
+      setError("Please enter a restaurant name");
+      return;
+    }
+    if (!manualMode && !form.place_id) {
       setError("Please search and select a restaurant first");
       return;
     }
@@ -77,24 +82,29 @@ export default function AddRestaurantModal() {
       return;
     }
 
-    // Check for duplicate
-    const { data: existing } = await supabase
-      .from("restaurants")
-      .select("id")
-      .eq("group_id", groupId)
-      .eq("place_id", form.place_id!)
-      .maybeSingle();
+    // Generate a unique place_id for manual entries
+    const placeId = form.place_id ?? `manual_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-    if (existing) {
-      setError("This restaurant is already in your list.");
-      setLoading(false);
-      return;
+    // Check for duplicate (only for Google Places entries)
+    if (form.place_id) {
+      const { data: existing } = await supabase
+        .from("restaurants")
+        .select("id")
+        .eq("group_id", groupId)
+        .eq("place_id", placeId)
+        .maybeSingle();
+
+      if (existing) {
+        setError("This restaurant is already in your list.");
+        setLoading(false);
+        return;
+      }
     }
 
     const { error } = await supabase.from("restaurants").insert({
       group_id: groupId,
       added_by: user.id,
-      place_id: form.place_id!,
+      place_id: placeId,
       name: form.name!,
       address: form.address ?? null,
       lat: form.lat ?? null,
@@ -117,6 +127,7 @@ export default function AddRestaurantModal() {
       setForm({ notes: "" });
       setCity("");
       setStatus("wishlist");
+      setManualMode(false);
       router.refresh();
     }
     setLoading(false);
@@ -137,8 +148,37 @@ export default function AddRestaurantModal() {
         />
       </div>
       <div className="space-y-1.5">
-        <Label>Search restaurant</Label>
-        <RestaurantSearch onSelect={handlePlaceSelect} city={city} />
+        <div className="flex items-center justify-between">
+          <Label>{manualMode ? "Restaurant name" : "Search restaurant"}</Label>
+          <button
+            type="button"
+            onClick={() => {
+              setManualMode(!manualMode);
+              setForm({ notes: form.notes });
+            }}
+            className="flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            <PencilLine className="h-3 w-3" />
+            {manualMode ? "Search instead" : "Can't find it? Add manually"}
+          </button>
+        </div>
+        {manualMode ? (
+          <div className="space-y-2">
+            <Input
+              placeholder="e.g. Iberica, Nobu, Dishoom…"
+              value={form.name ?? ""}
+              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value, place_id: undefined }))}
+              autoFocus
+            />
+            <Input
+              placeholder="Address (optional)"
+              value={form.address ?? ""}
+              onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+            />
+          </div>
+        ) : (
+          <RestaurantSearch onSelect={handlePlaceSelect} city={city} />
+        )}
       </div>
 
       {/* Status toggle — always visible once a place is selected or not */}
@@ -170,31 +210,29 @@ export default function AddRestaurantModal() {
         </div>
       </div>
 
-      {form.name && (
-        <>
-          <div className="rounded-lg bg-muted p-3 text-sm">
-            <p className="font-medium">{form.name}</p>
-            {form.address && (
-              <p className="text-muted-foreground text-xs mt-0.5">
-                {form.address}
-              </p>
-            )}
-            {form.cuisine && (
-              <p className="text-muted-foreground text-xs">{form.cuisine}</p>
-            )}
-          </div>
+      {form.name && !manualMode && (
+        <div className="rounded-lg bg-muted p-3 text-sm">
+          <p className="font-medium">{form.name}</p>
+          {form.address && (
+            <p className="text-muted-foreground text-xs mt-0.5">{form.address}</p>
+          )}
+          {form.cuisine && (
+            <p className="text-muted-foreground text-xs">{form.cuisine}</p>
+          )}
+        </div>
+      )}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="notes">Notes (optional)</Label>
-            <Textarea
-              id="notes"
-              placeholder={status === "visited" ? "How was it?" : "Why do you want to try this place?"}
-              value={form.notes}
-              onChange={(e) => updateField("notes", e.target.value)}
-              rows={3}
-            />
-          </div>
-        </>
+      {(form.name || manualMode) && (
+        <div className="space-y-1.5">
+          <Label htmlFor="notes">Notes (optional)</Label>
+          <Textarea
+            id="notes"
+            placeholder={status === "visited" ? "How was it?" : "Why do you want to try this place?"}
+            value={form.notes}
+            onChange={(e) => updateField("notes", e.target.value)}
+            rows={3}
+          />
+        </div>
       )}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -202,7 +240,7 @@ export default function AddRestaurantModal() {
       <Button
         className="w-full"
         onClick={handleSave}
-        disabled={loading || !form.name}
+        disabled={loading || !form.name || (!manualMode && !form.place_id)}
       >
         {loading ? "Saving…" : status === "visited" ? "Save as visited" : "Save to wishlist"}
       </Button>
