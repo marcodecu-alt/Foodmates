@@ -14,8 +14,8 @@ interface AppNavProps {
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/restaurants", label: "Restaurants", icon: UtensilsCrossed },
-  { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/recipes", label: "Recipes", icon: BookOpen },
+  { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/groups", label: "Groups", icon: Users },
   { href: "/account", label: "Account", icon: User },
 ];
