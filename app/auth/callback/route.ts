@@ -47,7 +47,8 @@ export async function GET(request: Request) {
 
         const emailPrefix = user.email?.split("@")[0];
         if (!profile || profile.username === emailPrefix) {
-          return NextResponse.redirect(`${origin}/profile?setup=true`);
+          const nextParam = next && next !== "/" ? `&next=${encodeURIComponent(next)}` : "";
+          return NextResponse.redirect(`${origin}/profile?setup=true${nextParam}`);
         }
       }
 

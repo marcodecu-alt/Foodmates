@@ -18,6 +18,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isSetup = searchParams.get("setup") === "true";
+  const next = searchParams.get("next") ?? "/";
 
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -86,7 +87,7 @@ export default function ProfilePage() {
         setError(error.message);
       }
     } else {
-      router.push("/");
+      router.push(next);
     }
 
     setLoading(false);
