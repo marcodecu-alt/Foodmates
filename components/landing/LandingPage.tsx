@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Menu, Link2, BookOpen, UtensilsCrossed } from "lucide-react";
+import { ChevronLeft, ChevronRight, Link2, BookOpen, UtensilsCrossed } from "lucide-react";
 
 /* ─── Logo ─── */
 function Logo({ size = 28 }: { size?: number }) {
@@ -287,9 +287,6 @@ export default function LandingPage() {
           <Logo size={24} />
           <span style={{ fontFamily: "var(--font-fraunces)" }} className="text-xl font-bold text-foreground">Foodmates</span>
         </div>
-        <button className="p-2 rounded-lg hover:bg-black/5 transition-colors" aria-label="Menu">
-          <Menu className="h-5 w-5 text-foreground/60" />
-        </button>
       </header>
 
       {/* ── Carousel ── */}
@@ -363,8 +360,8 @@ export default function LandingPage() {
               aria-label={`Slide ${i + 1}`}
               className="rounded-full transition-all duration-300"
               style={{
-                width: i === current ? 20 : 6,
-                height: 6,
+                width: 8,
+                height: 8,
                 background: i === current ? "#E05835" : "rgba(0,0,0,0.18)",
               }}
             />
