@@ -19,18 +19,21 @@ export default async function InvitePage({
   const supabase = createClient();
 
   // This page is public — use anon key to fetch group info
-  const { data: group } = await supabase
+  const { data: group, error: groupError } = await supabase
     .from("groups")
-    .select("id, name, created_by, profiles(display_name, username)")
+    .select("id, name, created_by")
     .eq("invite_code", params.code)
-    .single();
+    .maybeSingle();
 
+  if (groupError) console.error("[invite] group fetch error:", groupError);
   if (!group) notFound();
 
-  const creator = group.profiles as unknown as {
-    display_name: string | null;
-    username: string;
-  } | null;
+  // Fetch creator profile separately to avoid join issues
+  const { data: creator } = await supabase
+    .from("profiles")
+    .select("display_name, username")
+    .eq("id", group.created_by)
+    .maybeSingle();
 
   const {
     data: { user },
