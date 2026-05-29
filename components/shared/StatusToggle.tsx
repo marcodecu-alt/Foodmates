@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle, Circle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ export default function StatusToggle({
   const [status, setStatus] = useState(currentStatus);
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
+  const router = useRouter();
   const cfg = config[type];
   const isActive = status === cfg.statusB; // visited / cooked
 
@@ -49,6 +51,7 @@ export default function StatusToggle({
     const newStatus = isActive ? cfg.statusA : cfg.statusB;
     const prevStatus = status;
 
+    // Optimistic update — UI reflects change immediately
     setStatus(newStatus);
     onStatusChange?.(newStatus);
     setLoading(true);
@@ -64,8 +67,13 @@ export default function StatusToggle({
       .eq("id", id);
 
     if (error) {
+      // Roll back on failure
       setStatus(prevStatus);
       onStatusChange?.(prevStatus);
+    } else {
+      // Refresh immediately so the card moves to the correct tab now,
+      // without waiting for the RealtimeProvider subscription
+      router.refresh();
     }
     setLoading(false);
   }
