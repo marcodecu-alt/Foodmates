@@ -139,8 +139,8 @@ function SlideSave() {
 const ORGANIZE_ITEMS = [
   { name: "Padella Borough Market", sub: "London", img: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=300&q=85&auto=format&fit=crop" },
   { name: "10 Greek Street", sub: "London", img: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=300&q=85&auto=format&fit=crop" },
-  { name: "Cacio e Pepe", sub: "20 min · Easy", img: "https://images.unsplash.com/photo-1551183053-bf91798d047b?w=300&q=85&auto=format&fit=crop" },
-  { name: "Tiramisù", sub: "30 min · Medium", img: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=300&q=85&auto=format&fit=crop" },
+  { name: "Cacio e Pepe", sub: "20 min · Easy", img: "https://images.unsplash.com/photo-1663153465971-7fbb838043ca?w=300&q=85&auto=format&fit=crop" },
+  { name: "Tiramisù", sub: "30 min · Medium", img: "https://images.unsplash.com/photo-1768225385872-03945d45a0d3?w=300&q=85&auto=format&fit=crop" },
 ];
 
 function SlideOrganize() {
