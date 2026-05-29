@@ -321,13 +321,7 @@ export default function GroupChat({
             e.target.style.height =
               Math.min(e.target.scrollHeight, 96) + "px";
           }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend(e as unknown as React.FormEvent);
-            }
-          }}
-          placeholder="Message… (Enter to send, Shift+Enter for new line)"
+          placeholder="Write a message…"
           rows={1}
           className="flex-1 resize-none rounded-2xl border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground leading-relaxed transition-colors"
           style={{ minHeight: "44px", maxHeight: "96px" }}

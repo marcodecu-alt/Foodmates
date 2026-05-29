@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, UtensilsCrossed, BookOpen, Users, LogOut, User, MessageCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { Home, UtensilsCrossed, BookOpen, Users, User, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import GroupSelector from "@/components/groups/GroupSelector";
 import { useNotifications } from "@/lib/contexts/notifications";
@@ -18,18 +17,13 @@ const navItems = [
   { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/recipes", label: "Recipes", icon: BookOpen },
   { href: "/groups", label: "Groups", icon: Users },
+  { href: "/account", label: "Account", icon: User },
 ];
 
 export default function AppNav({ groups }: AppNavProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
   const { totalUnread } = useNotifications();
-
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    router.push("/login");
-  }
 
   return (
     <>
@@ -70,24 +64,6 @@ export default function AppNav({ groups }: AppNavProps) {
                 )}
               </Link>
             ))}
-            <Link
-              href="/profile"
-              className={cn(
-                "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-                pathname === "/profile"
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-              )}
-            >
-              <User className="h-4 w-4" />
-            </Link>
-            <button
-              onClick={handleSignOut}
-              className="px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-              title="Sign out"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
           </nav>
         </div>
       </header>

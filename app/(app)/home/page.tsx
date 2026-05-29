@@ -181,15 +181,21 @@ export default async function HomePage() {
 
   return (
     <div className="container py-6 space-y-5 max-w-2xl">
+      {/* Header */}
+      <div>
+        <h1 style={{ fontFamily: "var(--font-fraunces)" }} className="text-2xl font-bold text-foreground">Activity</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">What&apos;s happening in your group</p>
+      </div>
+
       {/* Quick actions */}
       <div className="flex gap-2">
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline" size="sm" className="rounded-xl">
           <Link href="/restaurants">
             <Plus className="h-3.5 w-3.5" />
             Add restaurant
           </Link>
         </Button>
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline" size="sm" className="rounded-xl">
           <Link href="/recipes">
             <Plus className="h-3.5 w-3.5" />
             Add recipe
@@ -197,19 +203,13 @@ export default async function HomePage() {
         </Button>
       </div>
 
-      {/* Section header */}
-      <div>
-        <h2 className="font-semibold text-lg">Activity</h2>
-        <div className="mt-1 border-b" />
-      </div>
-
       {/* Feed */}
       {feed.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-12 text-center">
-          <UtensilsCrossed className="h-9 w-9 text-muted-foreground" />
-          <p className="font-medium">No activity yet</p>
-          <p className="text-sm text-muted-foreground">Add your first restaurant to get started</p>
-          <Button asChild size="sm" variant="outline">
+        <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <UtensilsCrossed className="h-10 w-10 text-muted-foreground/50" />
+          <p className="font-semibold">No activity yet</p>
+          <p className="text-sm text-muted-foreground max-w-xs">Add your first restaurant or recipe and it will appear here</p>
+          <Button asChild size="sm" variant="outline" className="rounded-xl mt-1">
             <Link href="/restaurants">
               <Plus className="h-4 w-4" />
               Add restaurant
@@ -217,9 +217,11 @@ export default async function HomePage() {
           </Button>
         </div>
       ) : (
-        <ul className="space-y-1">
+        <ul className="space-y-3">
           {feed.map((item) => {
             const isRestaurant = item.type === "restaurant_added" || item.type === "restaurant_visited";
+            const isVisited = item.type === "restaurant_visited";
+            const isCooked = item.type === "recipe_cooked";
             const href = isRestaurant ? `/restaurants/${item.entityId}` : `/recipes/${item.entityId}`;
             const actor = item.addedById === user!.id ? "You" : item.addedByName;
 
@@ -227,47 +229,60 @@ export default async function HomePage() {
               <li key={item.key}>
                 <Link
                   href={href}
-                  className="flex items-start gap-3 rounded-xl p-3 hover:bg-muted/50 transition-colors"
+                  className="flex gap-4 rounded-2xl border border-border bg-card p-4 hover:bg-muted/30 transition-colors group"
                 >
                   {/* Thumbnail */}
-                  <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-muted flex items-center justify-center text-2xl">
+                  <div className="shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-muted flex items-center justify-center text-3xl">
                     {isRestaurant && item.photoReference ? (
                       <img
                         src={`/api/places/photo?ref=${item.photoReference}`}
                         alt={item.entityName}
-                        width={48}
-                        height={48}
+                        width={80}
+                        height={80}
                         className="w-full h-full object-cover"
                       />
                     ) : isRestaurant ? (
-                      "🍽️"
+                      <span className="text-3xl">🍽️</span>
                     ) : (
-                      "📖"
+                      <span className="text-3xl">📖</span>
                     )}
                   </div>
 
                   {/* Text */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm leading-snug">
-                      <span className="font-semibold">{actor}</span>{" "}
-                      <span className="text-muted-foreground">{actionText(item.type, item.entityName)}</span>
+                  <div className="flex-1 min-w-0 py-0.5">
+                    {/* Badge */}
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1.5 ${
+                      isVisited || isCooked
+                        ? "bg-green-100 text-green-700"
+                        : "bg-primary/10 text-primary"
+                    }`}>
+                      {isVisited ? "✓ Visited" : isCooked ? "✓ Cooked" : isRestaurant ? "＋ Wishlist" : "＋ Saved"}
+                    </span>
+
+                    <p className="font-semibold text-sm text-foreground leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+                      {item.entityName}
                     </p>
 
-                    {/* Sub-line: cuisine + rating */}
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className="text-xs text-muted-foreground">{actor}</span>
                       {item.cuisine && (
-                        <span className="text-xs text-muted-foreground">{item.cuisine}</span>
+                        <>
+                          <span className="text-muted-foreground/40 text-xs">·</span>
+                          <span className="text-xs text-muted-foreground">{item.cuisine}</span>
+                        </>
                       )}
-                      {item.type === "restaurant_visited" && item.rating != null && (
-                        <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                          {item.rating}/5
-                        </span>
+                      {isVisited && item.rating != null && (
+                        <>
+                          <span className="text-muted-foreground/40 text-xs">·</span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                            {item.rating}/5
+                          </span>
+                        </>
                       )}
                     </div>
 
-                    {/* Time */}
-                    <p className="text-xs text-muted-foreground/70 mt-0.5">{relativeTime(item.date)}</p>
+                    <p className="text-xs text-muted-foreground/60 mt-1.5">{relativeTime(item.date)}</p>
                   </div>
                 </Link>
               </li>
