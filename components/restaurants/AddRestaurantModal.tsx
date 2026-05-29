@@ -77,10 +77,28 @@ export default function AddRestaurantModal() {
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Auto-create a personal group if none exists
-    const groupId = activeGroupId ?? await getOrCreatePersonalGroup(setActiveGroupId);
+    // Validate active group against actual DB membership (guards against stale localStorage/cookie)
+    const { data: memberships } = await supabase
+      .from("group_members")
+      .select("group_id")
+      .eq("user_id", user.id);
+
+    const validGroupIds = (memberships ?? []).map((m) => m.group_id);
+    let groupId: string | null = null;
+
+    if (activeGroupId && validGroupIds.includes(activeGroupId)) {
+      groupId = activeGroupId;
+    } else if (validGroupIds.length > 0) {
+      // Stale localStorage — reset to first valid group
+      groupId = validGroupIds[0];
+      setActiveGroupId(groupId);
+    } else {
+      // No groups yet — auto-create one
+      groupId = await getOrCreatePersonalGroup(setActiveGroupId);
+    }
+
     if (!groupId) {
-      setError("Could not create a group. Please try again.");
+      setError("No group found. Please create or join a group first.");
       setLoading(false);
       return;
     }
@@ -131,6 +149,20 @@ export default function AddRestaurantModal() {
     if (error) {
       setError(error.message);
     } else {
+      // Save initial review to per-person reviews table (if rating or notes provided)
+      if (inserted?.id && (myRating !== null || form.notes.trim())) {
+        await supabase.from("reviews").upsert(
+          {
+            entity_id: inserted.id,
+            entity_type: "restaurant",
+            user_id: user.id,
+            rating: myRating,
+            notes: form.notes.trim() || null,
+          },
+          { onConflict: "entity_id,entity_type,user_id" }
+        );
+      }
+
       // Upload any queued photos
       if (pendingPhotos.length > 0 && inserted?.id) {
         for (const file of pendingPhotos) {

@@ -67,15 +67,17 @@ function LoginForm() {
       if (error) {
         setError(error.message);
       } else if (data.session) {
-        // Email confirmation is disabled — signed in immediately
-        router.push(next);
+        // Email confirmation is disabled — signed in immediately.
+        // Always send new users through profile setup so a profile row is created.
+        const nextParam = next && next !== "/home" ? `&next=${encodeURIComponent(next)}` : "";
+        router.push(`/profile?setup=true${nextParam}`);
         router.refresh();
       } else {
         // Email confirmation is enabled — ask user to check inbox
         setSignupDone(true);
       }
     } else {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -87,6 +89,22 @@ function LoginForm() {
             : error.message
         );
       } else {
+        // Check if this user has a profile; if not, send them through setup
+        const userId = signInData.user?.id;
+        if (userId) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("id", userId)
+            .maybeSingle();
+          if (!profile) {
+            const nextParam = next && next !== "/home" ? `&next=${encodeURIComponent(next)}` : "";
+            router.push(`/profile?setup=true${nextParam}`);
+            router.refresh();
+            setLoading(false);
+            return;
+          }
+        }
         router.push(next);
         router.refresh();
       }

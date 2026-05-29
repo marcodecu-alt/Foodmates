@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import AppNav from "@/components/shared/AppNav";
 import GroupBar from "@/components/shared/GroupBar";
@@ -18,6 +19,25 @@ export default async function AppLayout({
 
   if (!user) {
     redirect("/login");
+  }
+
+  // Guard: if the user has no profile yet, send them to setup.
+  // This catches email/password signups that bypassed the OAuth callback.
+  // Skip this check when already on /profile to avoid an infinite redirect loop.
+  const headersList = headers();
+  const pathname = headersList.get("x-pathname") ?? "";
+  const isProfilePage = pathname.startsWith("/profile");
+
+  if (!isProfilePage) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!profile) {
+      redirect("/profile?setup=true");
+    }
   }
 
   // Load user's groups for the group selector

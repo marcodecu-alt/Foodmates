@@ -150,6 +150,7 @@ export interface Database {
           uploaded_by: string;
           storage_path: string;
           type: string;
+          caption: string | null;
           created_at: string;
         };
         Insert: {
@@ -158,6 +159,7 @@ export interface Database {
           uploaded_by: string;
           storage_path: string;
           type?: string;
+          caption?: string | null;
           created_at?: string;
         };
         Update: {
@@ -166,6 +168,7 @@ export interface Database {
           uploaded_by?: string;
           storage_path?: string;
           type?: string;
+          caption?: string | null;
           created_at?: string;
         };
       };
@@ -238,6 +241,7 @@ export interface Database {
           uploaded_by: string;
           storage_path: string;
           type: string;
+          caption: string | null;
           created_at: string;
         };
         Insert: {
@@ -246,6 +250,7 @@ export interface Database {
           uploaded_by: string;
           storage_path: string;
           type?: string;
+          caption?: string | null;
           created_at?: string;
         };
         Update: {
@@ -254,7 +259,40 @@ export interface Database {
           uploaded_by?: string;
           storage_path?: string;
           type?: string;
+          caption?: string | null;
           created_at?: string;
+        };
+      };
+      reviews: {
+        Row: {
+          id: string;
+          entity_id: string;
+          entity_type: string;
+          user_id: string;
+          rating: number | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          entity_id: string;
+          entity_type: string;
+          user_id: string;
+          rating?: number | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          entity_id?: string;
+          entity_type?: string;
+          user_id?: string;
+          rating?: number | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
         };
       };
       messages: {
@@ -295,3 +333,4 @@ export type RestaurantMedia = Database["public"]["Tables"]["restaurant_media"]["
 export type Recipe = Database["public"]["Tables"]["recipes"]["Row"];
 export type RecipeMedia = Database["public"]["Tables"]["recipe_media"]["Row"];
 export type Message = Database["public"]["Tables"]["messages"]["Row"];
+export type DBReview = Database["public"]["Tables"]["reviews"]["Row"];

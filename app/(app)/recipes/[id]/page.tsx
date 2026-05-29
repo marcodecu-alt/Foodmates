@@ -7,6 +7,7 @@ import StatusToggle from "@/components/shared/StatusToggle";
 import MediaUpload from "@/components/shared/MediaUpload";
 import type { Recipe, RecipeMedia } from "@/lib/supabase/types";
 import ReviewSection from "@/components/shared/ReviewSection";
+import type { Review } from "@/components/shared/ReviewSection";
 
 export default async function RecipeDetailPage({
   params,
@@ -15,23 +16,29 @@ export default async function RecipeDetailPage({
 }) {
   const supabase = createClient();
 
-  const { data: recipe } = await supabase
-    .from("recipes")
-    .select("*")
-    .eq("id", params.id)
-    .single();
+  const [
+    { data: recipe },
+    { data: media },
+    { data: { user } },
+    { data: reviewsRaw },
+  ] = await Promise.all([
+    supabase.from("recipes").select("*").eq("id", params.id).single(),
+    supabase
+      .from("recipe_media")
+      .select("*")
+      .eq("recipe_id", params.id)
+      .order("created_at", { ascending: false }),
+    supabase.auth.getUser(),
+    supabase
+      .from("reviews")
+      .select("id, user_id, rating, notes, profiles:user_id(display_name, username)")
+      .eq("entity_id", params.id)
+      .eq("entity_type", "recipe"),
+  ]);
 
   if (!recipe) notFound();
 
-  const { data: media } = await supabase
-    .from("recipe_media")
-    .select("*")
-    .eq("recipe_id", params.id)
-    .order("created_at", { ascending: false });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const reviews = (reviewsRaw ?? []) as unknown as Review[];
 
   const r = recipe as Recipe;
   const ingredients = r.ingredients as
@@ -167,9 +174,9 @@ export default async function RecipeDetailPage({
       <div className="mb-6">
         <ReviewSection
           entityId={r.id}
-          table="recipes"
-          notes={r.notes}
-          myRating={r.my_rating ?? null}
+          entityType="recipe"
+          currentUserId={user!.id}
+          initialReviews={reviews}
         />
       </div>
 

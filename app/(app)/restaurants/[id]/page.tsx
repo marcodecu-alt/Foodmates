@@ -10,6 +10,7 @@ import RefreshPhotoButton from "@/components/restaurants/RefreshPhotoButton";
 import RestaurantPhoto from "@/components/restaurants/RestaurantPhoto";
 import DeleteRestaurantButton from "@/components/restaurants/DeleteRestaurantButton";
 import ReviewSection from "@/components/shared/ReviewSection";
+import type { Review } from "@/components/shared/ReviewSection";
 
 export default async function RestaurantDetailPage({
   params,
@@ -18,23 +19,29 @@ export default async function RestaurantDetailPage({
 }) {
   const supabase = createClient();
 
-  const { data: restaurant } = await supabase
-    .from("restaurants")
-    .select("*")
-    .eq("id", params.id)
-    .single();
+  const [
+    { data: restaurant },
+    { data: media },
+    { data: { user } },
+    { data: reviewsRaw },
+  ] = await Promise.all([
+    supabase.from("restaurants").select("*").eq("id", params.id).single(),
+    supabase
+      .from("restaurant_media")
+      .select("*")
+      .eq("restaurant_id", params.id)
+      .order("created_at", { ascending: false }),
+    supabase.auth.getUser(),
+    supabase
+      .from("reviews")
+      .select("id, user_id, rating, notes, profiles:user_id(display_name, username)")
+      .eq("entity_id", params.id)
+      .eq("entity_type", "restaurant"),
+  ]);
 
   if (!restaurant) notFound();
 
-  const { data: media } = await supabase
-    .from("restaurant_media")
-    .select("*")
-    .eq("restaurant_id", params.id)
-    .order("created_at", { ascending: false });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const reviews = (reviewsRaw ?? []) as unknown as Review[];
 
   const r = restaurant as Restaurant;
 
@@ -120,9 +127,9 @@ export default async function RestaurantDetailPage({
       <div className="mb-6">
         <ReviewSection
           entityId={r.id}
-          table="restaurants"
-          notes={r.notes}
-          myRating={r.my_rating ?? null}
+          entityType="restaurant"
+          currentUserId={user!.id}
+          initialReviews={reviews}
         />
       </div>
 
