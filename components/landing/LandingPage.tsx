@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ArrowLeft } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Menu, Link2, BookOpen, UtensilsCrossed } from "lucide-react";
 
-/* ─── Logo SVG ─── */
+/* ─────────────────────────────────────────────────────────────
+   Logo
+───────────────────────────────────────────────────────────── */
 function Logo({ size = 28 }: { size?: number }) {
   const h = Math.round((size * 34) / 32);
   return (
@@ -23,408 +23,465 @@ function Logo({ size = 28 }: { size?: number }) {
   );
 }
 
-const TOTAL = 5;
-
-/* ─── Bottom navigation bar (inside each slide) ─── */
-function BottomBar({
-  active,
-  scrollTo,
-}: {
-  active: number;
-  scrollTo: (i: number) => void;
-}) {
-  return (
-    <div className="border-t border-border/40 flex-shrink-0">
-      <div className="max-w-xl mx-auto flex items-center justify-between px-6 lg:px-10 py-4">
-        {/* Persistent brand tagline */}
-        <p
-          style={{ fontFamily: "var(--font-fraunces)" }}
-          className="text-xs text-muted-foreground italic leading-snug"
-        >
-          Built for two.{" "}
-          <span className="hidden sm:inline">Perfect for any group.</span>
-          <span className="sm:hidden">
-            <br />Perfect for any group.
-          </span>
-        </p>
-
-        {/* Back · Dots · Next */}
-        <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-          {active > 0 ? (
-            <button
-              onClick={() => scrollTo(active - 1)}
-              className="w-7 h-7 rounded-full border border-border text-muted-foreground flex items-center justify-center hover:border-primary hover:text-primary transition-colors"
-              aria-label="Previous"
-            >
-              <ArrowLeft className="h-3 w-3" />
-            </button>
-          ) : (
-            <div className="w-7" />
-          )}
-
-          <div className="flex gap-1.5">
-            {Array.from({ length: TOTAL }).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => scrollTo(i)}
-                aria-label={`Slide ${i + 1}`}
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-300",
-                  i === active ? "w-5 bg-primary" : "w-1.5 bg-border"
-                )}
-              />
-            ))}
-          </div>
-
-          {active < TOTAL - 1 ? (
-            <button
-              onClick={() => scrollTo(active + 1)}
-              className="w-7 h-7 rounded-full border border-primary text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
-              aria-label="Next"
-            >
-              <ArrowRight className="h-3 w-3" />
-            </button>
-          ) : (
-            <div className="w-7" />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Slide shell: full-screen card + bottom bar ─── */
-function Slide({
-  children,
-  active,
-  scrollTo,
-  bg = "bg-card",
-  centerContent = false,
-}: {
-  children: React.ReactNode;
-  active: number;
-  scrollTo: (i: number) => void;
-  bg?: string;
-  centerContent?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "w-screen h-full flex-shrink-0 snap-start flex flex-col",
-        bg
-      )}
-    >
-      {/* Content area */}
-      <div
-        className={cn(
-          "flex-1 min-h-0 flex flex-col px-6 lg:px-10 pt-8 max-w-xl mx-auto w-full",
-          centerContent && "items-center justify-center text-center"
-        )}
-      >
-        {children}
-      </div>
-
-      {/* Navigation always inside the slide */}
-      <BottomBar active={active} scrollTo={scrollTo} />
-    </div>
-  );
-}
-
 function NumBadge({ n }: { n: string }) {
   return (
-    <span className="inline-flex items-center justify-center w-7 h-7 rounded-full border border-primary text-primary text-[11px] font-semibold mb-5 flex-shrink-0">
+    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-primary text-primary text-xs font-bold tracking-wide flex-shrink-0">
       {n}
     </span>
   );
 }
 
-/* ════════════════════════════════════════════════════
-   Main component
-════════════════════════════════════════════════════ */
-export default function LandingPage() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
-
-  function scrollTo(i: number) {
-    const el = ref.current;
-    if (!el) return;
-    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
-    setActive(i);
-  }
-
-  function onScroll() {
-    const el = ref.current;
-    if (!el) return;
-    const i = Math.round(el.scrollLeft / el.clientWidth);
-    setActive(Math.max(0, Math.min(TOTAL - 1, i)));
-  }
-
-  const nav = { active, scrollTo };
-
+/* ─────────────────────────────────────────────────────────────
+   Small SVG icons used in Panel 02
+───────────────────────────────────────────────────────────── */
+function InstagramIcon() {
   return (
-    <div className="h-[100dvh] overflow-hidden">
-      <div
-        ref={ref}
-        onScroll={onScroll}
-        className="flex h-full overflow-x-auto snap-x snap-mandatory"
-        style={{ scrollbarWidth: "none" }}
-      >
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+      <rect x="2" y="2" width="20" height="20" rx="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </svg>
+  );
+}
 
-        {/* ──────────────── SLIDE 1 · Hero ──────────────── */}
-        <Slide {...nav}>
-          {/* Logo */}
-          <div className="flex items-center gap-2.5 mb-8 flex-shrink-0">
-            <Logo size={26} />
-            <span
+function TikTokIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" className="text-muted-foreground">
+      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.28a8.29 8.29 0 004.85 1.56V7.38a4.85 4.85 0 01-1.08-.69z" />
+    </svg>
+  );
+}
+
+function BrowserIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="text-muted-foreground">
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <path d="M8 21h8M12 17v4" />
+    </svg>
+  );
+}
+
+function HeartIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+    </svg>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PANEL 01 — Hero
+───────────────────────────────────────────────────────────── */
+function PanelHero() {
+  return (
+    <section className="flex flex-col gap-4 px-6 py-7 md:px-8 md:py-8 md:h-full bg-[#FAF6F2]">
+      <NumBadge n="01" />
+
+      <div className="flex-shrink-0">
+        <h2
+          style={{ fontFamily: "var(--font-fraunces)" }}
+          className="text-[2rem] lg:text-[2.25rem] font-bold leading-tight text-foreground"
+        >
+          Your private
+          <br />culinary space
+        </h2>
+        <p
+          style={{ fontFamily: "var(--font-fraunces)" }}
+          className="text-base text-primary italic mt-2 leading-snug font-medium"
+        >
+          Made for couples.
+          <br />Perfect for any group.
+        </p>
+      </div>
+
+      <p className="text-sm text-muted-foreground leading-relaxed flex-shrink-0">
+        Save, organize and discover restaurants and recipes — all in one private space.
+      </p>
+
+      {/* Photo */}
+      <div className="flex-1 min-h-[220px] md:min-h-0 rounded-2xl overflow-hidden relative">
+        <img
+          src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=700&q=82&auto=format&fit=crop"
+          alt="Couple cooking together"
+          className="w-full h-full object-cover"
+          loading="eager"
+        />
+        {/* Gradient overlay for legibility */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+        {/* Chat bubble */}
+        <div className="absolute bottom-4 left-4 right-4 flex">
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-sm px-3.5 py-2.5 shadow-lg">
+            <p className="text-xs font-semibold text-foreground">Where are we eating tonight? 🍴</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PANEL 02 — Save from anywhere
+───────────────────────────────────────────────────────────── */
+function PanelSave() {
+  return (
+    <section className="flex flex-col gap-4 px-6 py-7 md:px-8 md:py-8 md:h-full bg-white border-t md:border-t-0 border-[#EDE0D8]">
+      <NumBadge n="02" />
+
+      <div className="flex-shrink-0">
+        <h2
+          style={{ fontFamily: "var(--font-fraunces)" }}
+          className="text-[2rem] lg:text-[2.25rem] font-bold leading-tight text-foreground"
+        >
+          Save from
+          <br />anywhere
+        </h2>
+      </div>
+
+      <p className="text-sm text-muted-foreground leading-relaxed flex-shrink-0">
+        Clip recipes from any website, Instagram, TikTok or blog in one click.
+      </p>
+
+      {/* Source icons */}
+      <div className="flex gap-2 flex-shrink-0">
+        {[
+          { icon: <Link2 className="h-4 w-4 text-muted-foreground" />, label: "Link" },
+          { icon: <InstagramIcon />, label: "Instagram" },
+          { icon: <TikTokIcon />, label: "TikTok" },
+          { icon: <BrowserIcon />, label: "Browser" },
+        ].map(({ icon, label }) => (
+          <div
+            key={label}
+            title={label}
+            className="w-11 h-11 rounded-xl border border-border bg-muted/30 flex items-center justify-center"
+          >
+            {icon}
+          </div>
+        ))}
+      </div>
+
+      {/* Browser mockup */}
+      <div className="flex-1 min-h-[200px] md:min-h-0 rounded-xl border border-border overflow-hidden flex flex-col shadow-sm bg-white">
+        {/* Chrome bar */}
+        <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-border bg-[#F5F4F2] flex-shrink-0">
+          <div className="w-2 h-2 rounded-full bg-red-400/80" />
+          <div className="w-2 h-2 rounded-full bg-amber-400/80" />
+          <div className="w-2 h-2 rounded-full bg-green-400/80" />
+          <div className="flex-1 ml-2 bg-white rounded-md text-[10px] text-muted-foreground px-2 py-1 truncate border border-border/40">
+            www.giallozafferano.it/ricette/carbonara
+          </div>
+        </div>
+
+        {/* Page content + overlay */}
+        <div className="flex-1 flex flex-col p-4 gap-3 relative overflow-hidden">
+          {/* Faint page lines */}
+          <div className="absolute inset-0 pt-4 px-4 space-y-2 pointer-events-none opacity-[0.07]">
+            <div className="h-3 rounded bg-foreground w-3/4" />
+            <div className="h-2.5 rounded bg-foreground w-1/2" />
+            <div className="h-2.5 rounded bg-foreground w-5/6" />
+            <div className="h-20 rounded bg-foreground mt-2" />
+          </div>
+
+          {/* Floating "Save to Foodmates" button */}
+          <div className="relative z-10 flex-shrink-0">
+            <div className="flex items-center gap-2 bg-primary text-white text-xs font-semibold rounded-xl px-3.5 py-2 w-fit shadow-md">
+              <Logo size={13} />
+              <span>Save to Foodmates</span>
+            </div>
+          </div>
+
+          {/* Detected recipe */}
+          <div className="relative z-10 flex gap-3 items-center flex-shrink-0">
+            <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
+              <img
+                src="https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=120&q=80&auto=format&fit=crop"
+                alt="Spaghetti alla Carbonara"
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-foreground leading-tight">Spaghetti alla Carbonara</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">15 min · Easy</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PANEL 03 — Organize what you love
+───────────────────────────────────────────────────────────── */
+const ORGANIZE_ITEMS = [
+  {
+    name: "Padella Borough\nMarket",
+    sub: "London",
+    img: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=220&q=80&auto=format&fit=crop",
+  },
+  {
+    name: "10 Greek Street",
+    sub: "London",
+    img: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=220&q=80&auto=format&fit=crop",
+  },
+  {
+    name: "Cacio e Pepe",
+    sub: "20 min · Easy",
+    img: "https://images.unsplash.com/photo-1551183053-bf91798d047b?w=220&q=80&auto=format&fit=crop",
+  },
+  {
+    name: "Tiramisù",
+    sub: "30 min · Medium",
+    img: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=220&q=80&auto=format&fit=crop",
+  },
+];
+
+function PanelOrganize() {
+  return (
+    <section className="flex flex-col gap-4 px-6 py-7 md:px-8 md:py-8 md:h-full bg-[#FAF6F2] border-t md:border-t-0 border-[#EDE0D8]">
+      <NumBadge n="03" />
+
+      <div className="flex-shrink-0">
+        <h2
+          style={{ fontFamily: "var(--font-fraunces)" }}
+          className="text-[2rem] lg:text-[2.25rem] font-bold leading-tight text-foreground"
+        >
+          Organize what
+          <br />you love
+        </h2>
+      </div>
+
+      <p className="text-sm text-muted-foreground leading-relaxed flex-shrink-0">
+        Keep all your restaurants and recipes beautifully organized and easy to find.
+      </p>
+
+      {/* Tab pills */}
+      <div className="flex gap-2 flex-shrink-0">
+        <span className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-full bg-primary text-white">
+          <UtensilsCrossed className="h-3 w-3" />
+          Restaurants
+        </span>
+        <span className="flex items-center gap-1.5 text-xs font-medium px-3.5 py-1.5 rounded-full border border-border text-muted-foreground bg-white">
+          <BookOpen className="h-3 w-3" />
+          Recipes
+        </span>
+      </div>
+
+      {/* 2×2 card grid */}
+      <div className="grid grid-cols-2 gap-2 flex-1 content-start">
+        {ORGANIZE_ITEMS.map((item) => (
+          <div key={item.name} className="rounded-xl border border-border bg-white overflow-hidden shadow-sm">
+            <div className="h-[68px] overflow-hidden">
+              <img
+                src={item.img}
+                alt={item.name.replace("\n", " ")}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            </div>
+            <div className="px-2.5 py-2 flex items-start justify-between gap-1">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold text-foreground leading-tight whitespace-pre-line">
+                  {item.name}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{item.sub}</p>
+              </div>
+              <HeartIcon className="h-3.5 w-3.5 text-primary flex-shrink-0 mt-0.5" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PANEL 04 — Share and decide together
+───────────────────────────────────────────────────────────── */
+const AVATARS = [
+  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80&auto=format&fit=crop&crop=face",
+  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&q=80&auto=format&fit=crop&crop=face",
+  "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&q=80&auto=format&fit=crop&crop=face",
+];
+
+function PanelShare() {
+  return (
+    <section className="flex flex-col gap-4 px-6 py-7 md:px-8 md:py-8 md:h-full bg-white border-t md:border-t-0 border-[#EDE0D8]">
+      <NumBadge n="04" />
+
+      <div className="flex-shrink-0">
+        <h2
+          style={{ fontFamily: "var(--font-fraunces)" }}
+          className="text-[2rem] lg:text-[2.25rem] font-bold leading-tight text-foreground"
+        >
+          Share and decide
+          <br />together
+        </h2>
+      </div>
+
+      <p className="text-sm text-muted-foreground leading-relaxed flex-shrink-0">
+        Create a space for just you two, or invite your partner, friends or family.
+      </p>
+
+      {/* Avatar stack */}
+      <div className="flex items-center flex-shrink-0">
+        {AVATARS.map((src, i) => (
+          <div
+            key={i}
+            className="w-11 h-11 rounded-full border-2 border-white overflow-hidden shadow-sm"
+            style={{ marginLeft: i > 0 ? "-10px" : "0" }}
+          >
+            <img src={src} alt="Member" className="w-full h-full object-cover" loading="lazy" />
+          </div>
+        ))}
+        <div className="w-9 h-9 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center text-muted-foreground text-sm font-medium ml-2">
+          +
+        </div>
+      </div>
+
+      {/* Chat bubble */}
+      <div className="flex items-end gap-2 flex-shrink-0">
+        <div className="bg-[#F0F6F2] rounded-2xl rounded-bl-sm px-4 py-3 flex-1 max-w-[200px]">
+          <p className="text-xs font-medium text-foreground leading-snug">
+            &ldquo;Let&apos;s go here this Saturday?&rdquo; ♥
+          </p>
+        </div>
+        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border-2 border-white shadow-sm">
+          <img src={AVATARS[1]} alt="" className="w-full h-full object-cover" loading="lazy" />
+        </div>
+      </div>
+
+      {/* Restaurant card */}
+      <div className="flex-1 min-h-[160px] md:min-h-0 rounded-2xl border border-border bg-white overflow-hidden shadow-sm">
+        <div className="h-[120px] md:h-[35%] overflow-hidden relative">
+          <img
+            src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&q=82&auto=format&fit=crop"
+            alt="L'Antica Pizzeria da Michele"
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
+        <div className="p-3 flex items-start justify-between gap-2">
+          <div>
+            <p
               style={{ fontFamily: "var(--font-fraunces)" }}
-              className="text-xl font-bold text-foreground"
+              className="text-sm font-semibold text-foreground leading-tight"
             >
-              Foodmates
-            </span>
-          </div>
-
-          <NumBadge n="01" />
-
-          <h2
-            style={{ fontFamily: "var(--font-fraunces)" }}
-            className="text-4xl lg:text-5xl font-bold leading-tight text-foreground flex-shrink-0"
-          >
-            Your private
-            <br />culinary space
-          </h2>
-
-          <p
-            style={{ fontFamily: "var(--font-fraunces)" }}
-            className="text-base text-primary italic mt-2 leading-snug flex-shrink-0"
-          >
-            Made for couples.
-            <br />Perfect for any group.
-          </p>
-
-          <p className="text-sm text-muted-foreground mt-3 leading-relaxed flex-shrink-0">
-            Save, organize and discover restaurants and recipes — all in one private space.
-          </p>
-
-          {/* Illustration */}
-          <div className="mt-5 rounded-2xl overflow-hidden bg-[#EAD8C8] flex-1 min-h-0 relative flex flex-col items-center justify-center">
-            <div className="flex gap-4 text-5xl select-none">
-              <span>👩‍🍳</span>
-              <span>👨‍🍳</span>
-            </div>
-            <div className="text-5xl select-none mt-1">🍝</div>
-            <div className="absolute bottom-4 left-4">
-              <div className="bg-white rounded-2xl rounded-bl-sm px-3 py-2 text-xs font-medium shadow-sm">
-                Where are we eating tonight? 🍴
-              </div>
-            </div>
-          </div>
-        </Slide>
-
-        {/* ──────────────── SLIDE 2 · Save ──────────────── */}
-        <Slide {...nav}>
-          <NumBadge n="02" />
-
-          <h2
-            style={{ fontFamily: "var(--font-fraunces)" }}
-            className="text-4xl lg:text-5xl font-bold leading-tight text-foreground flex-shrink-0"
-          >
-            Save from
-            <br />anywhere
-          </h2>
-
-          <p className="text-sm text-muted-foreground mt-3 leading-relaxed flex-shrink-0">
-            Clip recipes from any website, Instagram, TikTok or blog in one click.
-          </p>
-
-          <div className="flex gap-2 mt-4 flex-shrink-0">
-            {[
-              { icon: "🔗", label: "Link" },
-              { icon: "📸", label: "Instagram" },
-              { icon: "🎵", label: "TikTok" },
-              { icon: "🌐", label: "Web" },
-            ].map(({ icon, label }) => (
-              <div
-                key={label}
-                title={label}
-                className="w-11 h-11 rounded-xl border border-border bg-muted/40 flex items-center justify-center text-xl"
-              >
-                {icon}
-              </div>
-            ))}
-          </div>
-
-          {/* Browser mockup */}
-          <div className="mt-5 rounded-xl border border-border bg-background overflow-hidden flex-1 min-h-0 flex flex-col shadow-sm">
-            <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-border bg-muted/40 flex-shrink-0">
-              <div className="w-2 h-2 rounded-full bg-red-400/80" />
-              <div className="w-2 h-2 rounded-full bg-amber-400/80" />
-              <div className="w-2 h-2 rounded-full bg-green-400/80" />
-              <div className="flex-1 ml-2 bg-background rounded text-[10px] text-muted-foreground px-2 py-0.5 truncate">
-                www.giallozafferano.it/ricette/carbonara
-              </div>
-            </div>
-            <div className="flex-1 p-4 flex flex-col gap-3">
-              <div className="flex items-center gap-2 bg-primary text-white text-xs font-semibold rounded-lg px-3 py-2 w-fit">
-                <Logo size={14} />
-                <span>Save to Foodmates</span>
-              </div>
-              <div className="flex gap-3 items-center">
-                <div className="w-14 h-14 rounded-lg bg-[#EAD8C8] flex items-center justify-center text-2xl flex-shrink-0">
-                  🍝
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-foreground">Spaghetti alla Carbonara</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">15 min · Easy</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Slide>
-
-        {/* ──────────────── SLIDE 3 · Organize ──────────────── */}
-        <Slide {...nav}>
-          <NumBadge n="03" />
-
-          <h2
-            style={{ fontFamily: "var(--font-fraunces)" }}
-            className="text-4xl lg:text-5xl font-bold leading-tight text-foreground flex-shrink-0"
-          >
-            Organize what
-            <br />you love
-          </h2>
-
-          <p className="text-sm text-muted-foreground mt-3 leading-relaxed flex-shrink-0">
-            Keep all your restaurants and recipes beautifully organized and easy to find.
-          </p>
-
-          <div className="flex gap-2 mt-4 flex-shrink-0">
-            <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-primary text-white flex items-center gap-1.5">
-              🍽️ Restaurants
-            </span>
-            <span className="text-xs font-medium px-3 py-1.5 rounded-full border border-border text-muted-foreground flex items-center gap-1.5">
-              📖 Recipes
-            </span>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-2 flex-1 min-h-0 content-start overflow-hidden">
-            {[
-              { name: "Padella Borough", sub: "London", emoji: "🍕" },
-              { name: "10 Greek Street", sub: "London", emoji: "🥗" },
-              { name: "Cacio e Pepe", sub: "20 min · Easy", emoji: "🍝" },
-              { name: "Tiramisù", sub: "30 min · Medium", emoji: "🍮" },
-            ].map((item) => (
-              <div
-                key={item.name}
-                className="rounded-xl border border-border bg-background overflow-hidden"
-              >
-                <div className="h-14 bg-[#EAD8C8] flex items-center justify-center text-2xl">
-                  {item.emoji}
-                </div>
-                <div className="px-2.5 py-2">
-                  <p className="text-[11px] font-semibold text-foreground leading-tight line-clamp-1">
-                    {item.name}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{item.sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Slide>
-
-        {/* ──────────────── SLIDE 4 · Share ──────────────── */}
-        <Slide {...nav}>
-          <NumBadge n="04" />
-
-          <h2
-            style={{ fontFamily: "var(--font-fraunces)" }}
-            className="text-4xl lg:text-5xl font-bold leading-tight text-foreground flex-shrink-0"
-          >
-            Share and decide
-            <br />together
-          </h2>
-
-          <p className="text-sm text-muted-foreground mt-3 leading-relaxed flex-shrink-0">
-            Create a space for just you two, or invite your partner, friends or family.
-          </p>
-
-          <div className="flex items-center mt-5 flex-shrink-0">
-            {["👩🏻", "👨🏼", "👩🏾"].map((emoji, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "w-11 h-11 rounded-full bg-[#EAD8C8] border-2 border-card flex items-center justify-center text-xl",
-                  i > 0 ? "-ml-2" : ""
-                )}
-              >
-                {emoji}
-              </div>
-            ))}
-            <div className="w-9 h-9 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center text-muted-foreground text-sm font-medium ml-2">
-              +
-            </div>
-          </div>
-
-          <div className="mt-4 bg-[#F0F6F2] rounded-2xl rounded-tl-sm px-4 py-3 w-fit max-w-[220px] flex-shrink-0">
-            <p className="text-xs font-medium text-foreground leading-snug">
-              &ldquo;Let&apos;s go here this Saturday?&rdquo; ♥
+              L&apos;Antica Pizzeria
+              <br />da Michele
             </p>
+            <p className="text-xs text-muted-foreground mt-1">Naples</p>
           </div>
-
-          <div className="mt-4 rounded-2xl border border-border bg-background overflow-hidden flex-1 min-h-0">
-            <div className="h-28 bg-gradient-to-br from-[#C8B8A2] to-[#A89282] flex items-center justify-center">
-              <span className="text-5xl">🏛️</span>
+          {/* Action buttons */}
+          <div className="flex gap-1 flex-shrink-0 mt-0.5">
+            <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center">
+              <svg className="h-3.5 w-3.5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
             </div>
-            <div className="p-3">
-              <p
-                className="text-sm font-semibold text-foreground leading-tight"
-                style={{ fontFamily: "var(--font-fraunces)" }}
-              >
-                L&apos;Antica Pizzeria
-                <br />da Michele
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Naples</p>
+            <div className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center">
+              <HeartIcon className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <div className="w-7 h-7 rounded-full bg-amber-50 flex items-center justify-center">
+              <svg className="h-3.5 w-3.5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
             </div>
           </div>
-        </Slide>
+        </div>
+      </div>
+    </section>
+  );
+}
 
-        {/* ──────────────── SLIDE 5 · Login / Sign up ──────────────── */}
-        <Slide {...nav} bg="bg-[#FBEEE6]" centerContent>
-          <Logo size={56} />
+/* ─────────────────────────────────────────────────────────────
+   Main export
+───────────────────────────────────────────────────────────── */
+export default function LandingPage() {
+  return (
+    <div className="bg-[#FAF6F2] min-h-dvh flex flex-col">
 
-          <h1
+      {/* ── Sticky header ── */}
+      <header className="sticky top-0 z-50 bg-[#FAF6F2]/95 backdrop-blur-md border-b border-[#EDE0D8] flex items-center justify-between px-5 h-14 flex-shrink-0">
+        <div className="flex items-center gap-2.5">
+          <Logo size={24} />
+          <span
             style={{ fontFamily: "var(--font-fraunces)" }}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mt-6"
+            className="text-xl font-bold text-foreground"
           >
-            Built for two.
-            <br />Perfect for
-            <br />any group.
-          </h1>
+            Foodmates
+          </span>
+        </div>
+        <button
+          className="p-2 rounded-lg hover:bg-black/5 transition-colors"
+          aria-label="Menu"
+        >
+          <Menu className="h-5 w-5 text-foreground/60" />
+        </button>
+      </header>
 
-          <p className="text-muted-foreground mt-4 text-sm leading-relaxed max-w-xs">
-            Your private culinary space — save restaurants and recipes you love, together.
-          </p>
+      {/* ── Feature panels ──
+          Desktop: 4 equal columns, fixed viewport height, each scrolls independently
+          Mobile:  stacked vertically, natural scroll
+      ── */}
+      <main className="flex-1 md:flex md:flex-row md:divide-x md:divide-[#EDE0D8] md:overflow-hidden md:h-[calc(100dvh-56px-72px)]">
+        {/* On desktop, each column scrolls independently */}
+        <div className="md:flex-1 md:overflow-y-auto md:min-w-0">
+          <PanelHero />
+        </div>
+        <div className="md:flex-1 md:overflow-y-auto md:min-w-0">
+          <PanelSave />
+        </div>
+        <div className="md:flex-1 md:overflow-y-auto md:min-w-0">
+          <PanelOrganize />
+        </div>
+        <div className="md:flex-1 md:overflow-y-auto md:min-w-0">
+          <PanelShare />
+        </div>
+      </main>
 
-          <div className="flex gap-3 mt-8 w-full max-w-xs">
+      {/* ── Sticky footer / CTA ── */}
+      <footer className="sticky bottom-0 z-50 bg-[#FAF6F2]/95 backdrop-blur-md border-t border-[#EDE0D8] flex-shrink-0 h-[72px] flex items-center">
+        <div className="w-full px-5 flex items-center justify-between gap-4">
+
+          {/* Left: tagline (hidden on very small screens) */}
+          <div className="min-w-0">
+            <p
+              style={{ fontFamily: "var(--font-fraunces)" }}
+              className="text-sm font-bold text-foreground leading-tight truncate hidden sm:block"
+            >
+              Built for two. Perfect for any group.
+            </p>
+            <p className="text-xs text-muted-foreground hidden md:block mt-0.5">
+              Your space. Your taste. Your people.
+            </p>
+            {/* Mobile: just show logo */}
+            <div className="sm:hidden flex items-center gap-1.5">
+              <Logo size={18} />
+              <span style={{ fontFamily: "var(--font-fraunces)" }} className="text-sm font-bold text-foreground">
+                Foodmates
+              </span>
+            </div>
+          </div>
+
+          {/* Right: CTA buttons */}
+          <div className="flex items-center gap-2.5 flex-shrink-0">
             <Link
               href="/login"
-              className="flex-1 py-3.5 rounded-xl border border-foreground/80 text-foreground text-sm font-semibold text-center hover:bg-foreground/5 transition-colors"
+              className="px-5 py-2.5 rounded-xl border border-foreground/25 text-foreground text-sm font-semibold hover:bg-foreground/5 transition-colors whitespace-nowrap"
             >
               Log in
             </Link>
             <Link
               href="/login?tab=signup"
-              className="flex-1 py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold text-center hover:bg-primary/90 transition-colors"
+              className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 active:bg-primary/80 transition-colors whitespace-nowrap shadow-sm"
             >
               Sign up
             </Link>
           </div>
 
-          <p className="text-[11px] text-muted-foreground mt-5 flex items-center gap-1.5">
-            <span>🔒</span> Private by default. Always.
-          </p>
-        </Slide>
-
-      </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -110,7 +110,7 @@ export default async function HomePage() {
   const activities: Activity[] = [];
 
   for (const r of restaurants ?? []) {
-    const profile = r.profiles as { id: string; display_name: string | null; username: string | null } | null;
+    const profile = r.profiles as unknown as { id: string; display_name: string | null; username: string | null } | null;
     const addedById = r.added_by ?? "";
     const addedByName = profile?.display_name ?? profile?.username ?? "Someone";
 
@@ -143,7 +143,7 @@ export default async function HomePage() {
   }
 
   for (const r of recipes ?? []) {
-    const profile = r.profiles as { id: string; display_name: string | null; username: string | null } | null;
+    const profile = r.profiles as unknown as { id: string; display_name: string | null; username: string | null } | null;
     const addedById = r.added_by ?? "";
     const addedByName = profile?.display_name ?? profile?.username ?? "Someone";
 
