@@ -127,6 +127,28 @@ export default async function HomePage() {
     (recipes ?? []).map((r) => [r.id, r.title])
   );
 
+  // --- Fetch per-member restaurant statuses for feed events ---
+  const { data: memberStatusEvents } = restaurantIds.length > 0
+    ? await supabase
+        .from("restaurant_member_status")
+        .select("restaurant_id, user_id, status, visited_at, created_at, profiles:user_id(id, display_name, username)")
+        .in("restaurant_id", restaurantIds)
+        .order("created_at", { ascending: false })
+        .limit(40)
+    : { data: [] as {
+        restaurant_id: string;
+        user_id: string;
+        status: string;
+        visited_at: string | null;
+        created_at: string;
+        profiles: { id: string; display_name: string | null; username: string | null } | null;
+      }[] };
+
+  // Build restaurant info lookup
+  const restaurantInfo = new Map(
+    (restaurants ?? []).map((r) => [r.id, r])
+  );
+
   const [{ data: restaurantMedia }, { data: recipeMedia }] = await Promise.all([
     restaurantIds.length > 0
       ? supabase
@@ -172,40 +194,42 @@ export default async function HomePage() {
   // --- Build feed ---
   const activities: Activity[] = [];
 
-  for (const r of restaurants ?? []) {
-    const profile = r.profiles as unknown as {
+  // One feed event per person per restaurant (covers joins too)
+  for (const ms of memberStatusEvents ?? []) {
+    const profile = ms.profiles as unknown as {
       id: string;
       display_name: string | null;
       username: string | null;
     } | null;
-    const addedById = r.added_by ?? "";
+    const r = restaurantInfo.get(ms.restaurant_id);
+    if (!r) continue;
+
+    const addedById = ms.user_id;
     const addedByName = profile?.display_name ?? profile?.username ?? "Someone";
 
-    if (r.status === "visited" && r.visited_at) {
-      // Only show the visited event — avoids duplicate when added directly as visited
+    if (ms.status === "visited" && ms.visited_at) {
       activities.push({
-        key: `restaurant_visited_${r.id}`,
+        key: `restaurant_visited_${r.id}_${ms.user_id}`,
         type: "restaurant_visited",
         entityId: r.id,
         entityName: r.name,
         photoReference: r.photo_reference,
         addedById,
         addedByName,
-        date: r.visited_at,
+        date: ms.visited_at,
         rating: r.my_rating,
         cuisine: r.cuisine,
       });
     } else {
-      // Wishlist: show the "added" event
       activities.push({
-        key: `restaurant_added_${r.id}`,
+        key: `restaurant_added_${r.id}_${ms.user_id}`,
         type: "restaurant_added",
         entityId: r.id,
         entityName: r.name,
         photoReference: r.photo_reference,
         addedById,
         addedByName,
-        date: r.created_at,
+        date: ms.created_at,
         cuisine: r.cuisine,
       });
     }
@@ -418,9 +442,9 @@ export default async function HomePage() {
                           {item.entityType === "recipe" ? "Recipe photo" : "Restaurant photo"}
                         </>
                       ) : isRestaurant ? (
-                        "＋ Restaurant"
+                        "＋ Restaurant wishlist"
                       ) : (
-                        "＋ Recipe"
+                        "＋ Recipe saved"
                       )}
                     </span>
 
