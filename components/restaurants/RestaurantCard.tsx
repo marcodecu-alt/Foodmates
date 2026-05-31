@@ -37,9 +37,6 @@ export default function RestaurantCard({
   const myStatus =
     memberStatuses.find((ms) => ms.user_id === userId)?.status ?? null;
 
-  // Other members (not me)
-  const others = memberStatuses.filter((ms) => ms.user_id !== userId);
-
   const badgeLabel =
     myStatus === "visited"
       ? "Visited"
@@ -114,35 +111,35 @@ export default function RestaurantCard({
           </div>
         ) : null}
 
-        {/* Who else has this in their list */}
-        {others.length > 0 && (
+        {/* Member statuses — show everyone including current user */}
+        {memberStatuses.length > 0 ? (
           <div className="flex flex-wrap gap-x-2 gap-y-0.5 pt-0.5">
-            {others.map((ms) => {
-              const name =
-                ms.profiles?.display_name ??
-                ms.profiles?.username ??
-                "Member";
+            {memberStatuses.map((ms) => {
+              const isMe = ms.user_id === userId;
+              const name = isMe
+                ? "You"
+                : ms.profiles?.display_name ??
+                  ms.profiles?.username ??
+                  "Member";
               return (
                 <span
                   key={ms.user_id}
                   className="flex items-center gap-0.5 text-[10px] text-muted-foreground"
                 >
                   <span className="font-medium">{name}</span>
-                  <span>
-                    {ms.status === "visited" ? " ✓" : " ★"}
-                  </span>
+                  <span>{ms.status === "visited" ? " ✓" : " ★"}</span>
                 </span>
               );
             })}
           </div>
-        )}
-
-        {/* Added by (only show if no member statuses or if it's the only person) */}
-        {addedByName && memberStatuses.length === 0 && (
-          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            <User className="h-3 w-3 flex-shrink-0" />
-            <span className="truncate">{addedByName}</span>
-          </div>
+        ) : (
+          /* Fallback: show who added it if no status rows yet */
+          addedByName && (
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <User className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{addedByName}</span>
+            </div>
+          )
         )}
 
         <StatusToggle
