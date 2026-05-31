@@ -409,18 +409,18 @@ export default async function HomePage() {
                       }`}
                     >
                       {isVisited ? (
-                        "✓ Visited"
+                        "✓ Restaurant visited"
                       ) : isCooked ? (
-                        "✓ Cooked"
+                        "✓ Recipe cooked"
                       ) : isPhoto ? (
                         <>
                           <Camera className="h-2.5 w-2.5" />
-                          Photo
+                          {item.entityType === "recipe" ? "Recipe photo" : "Restaurant photo"}
                         </>
                       ) : isRestaurant ? (
-                        "＋ Wishlist"
+                        "＋ Restaurant"
                       ) : (
-                        "＋ Saved"
+                        "＋ Recipe"
                       )}
                     </span>
 
