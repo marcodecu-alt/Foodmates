@@ -84,7 +84,7 @@ export default function AddRecipeModal() {
   function handleClipError(url: string) {
     setSourceUrl(url);
     setConfidence("low");
-    setError("Could not extract recipe. Please fill in the details manually.");
+    setError("Couldn't extract recipe from this page — the site may block automated access. You can fill in the details manually below.");
   }
 
   function updateField(field: keyof RecipeData, value: unknown) {

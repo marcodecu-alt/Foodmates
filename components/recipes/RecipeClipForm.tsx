@@ -51,6 +51,13 @@ export default function RecipeClipForm({ onResult, onError }: RecipeClipFormProp
 
       const data = await res.json();
       setLastImportedUrl(target);
+
+      // If title is empty the extraction failed — treat as error
+      if (!data.recipe?.title) {
+        onError(target);
+        return;
+      }
+
       setImported(true);
       onResult(data.recipe, data.confidence, target, data.cover_photo_url ?? null);
     } catch {
