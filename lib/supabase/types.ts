@@ -217,6 +217,7 @@ export interface Database {
           status: string;
           cooked_at: string | null;
           my_rating: number | null;
+          cover_photo_url: string | null;
           created_at: string;
         };
         Insert: {
@@ -226,6 +227,7 @@ export interface Database {
           title: string;
           description?: string | null;
           source_url?: string | null;
+          cover_photo_url?: string | null;
           ingredients?: Json | null;
           steps?: Json | null;
           prep_time?: number | null;
@@ -246,6 +248,7 @@ export interface Database {
           title?: string;
           description?: string | null;
           source_url?: string | null;
+          cover_photo_url?: string | null;
           ingredients?: Json | null;
           steps?: Json | null;
           prep_time?: number | null;

@@ -17,6 +17,26 @@ const SYSTEM_PROMPT = `You are a recipe extraction assistant. Given raw HTML, ex
 }
 If a field cannot be found, use null. Never invent steps or ingredients.`;
 
+function extractOgImage(html: string, baseUrl: string): string | null {
+  // Match both attribute orderings: property then content, or content then property
+  const patterns = [
+    /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i,
+    /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i,
+  ];
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match?.[1]) {
+      const raw = match[1].trim();
+      // Make relative URLs absolute
+      if (raw.startsWith("http")) return raw;
+      try { return new URL(raw, baseUrl).toString(); } catch { continue; }
+    }
+  }
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   if (!body?.url) {
@@ -89,7 +109,8 @@ export async function POST(request: NextRequest) {
 
     const confidence = nullCount >= 3 ? "low" : "high";
 
-    return NextResponse.json({ recipe, confidence });
+    const cover_photo_url = extractOgImage(html, body.url);
+    return NextResponse.json({ recipe, confidence, cover_photo_url });
   } catch (err) {
     console.error("Recipe clip error:", err);
     return NextResponse.json({

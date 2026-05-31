@@ -50,7 +50,7 @@ export default async function RecipeDetailPage({
   const coverUrl = coverPhoto
     ? supabase.storage.from("media").getPublicUrl(coverPhoto.storage_path).data
         .publicUrl
-    : null;
+    : r.cover_photo_url ?? null;
 
   return (
     <div className="container py-6 max-w-2xl">

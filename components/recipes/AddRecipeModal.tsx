@@ -44,6 +44,7 @@ export default function AddRecipeModal() {
   const [error, setError] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<"high" | "low" | null>(null);
   const [sourceUrl, setSourceUrl] = useState("");
+  const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(null);
   const { activeGroupId, setActiveGroupId } = useActiveGroup();
   const supabase = createClient();
 
@@ -63,11 +64,13 @@ export default function AddRecipeModal() {
   function handleClipResult(
     recipe: RecipeData,
     conf: "high" | "low",
-    url: string
+    url: string,
+    coverUrl: string | null
   ) {
     setForm(recipe);
     setConfidence(conf);
     setSourceUrl(url);
+    setCoverPhotoUrl(coverUrl);
   }
 
   function handleClipError(url: string) {
@@ -108,6 +111,7 @@ export default function AddRecipeModal() {
       title: form.title.trim(),
       description: form.description,
       source_url: sourceUrl || null,
+      cover_photo_url: coverPhotoUrl || null,
       ingredients: form.ingredients.length > 0 ? form.ingredients : null,
       steps: form.steps.length > 0 ? form.steps : null,
       prep_time: form.prep_time,
@@ -137,6 +141,7 @@ export default function AddRecipeModal() {
       });
       setConfidence(null);
       setSourceUrl("");
+      setCoverPhotoUrl(null);
       router.refresh();
     }
     setLoading(false);

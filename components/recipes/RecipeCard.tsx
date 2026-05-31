@@ -14,14 +14,15 @@ interface RecipeCardProps {
 
 export default function RecipeCard({ recipe: r, photoUrl }: RecipeCardProps) {
   const totalTime = (r.prep_time ?? 0) + (r.cook_time ?? 0);
+  const displayPhoto = photoUrl ?? r.cover_photo_url ?? null;
 
   return (
     <div className="rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
       <Link href={`/recipes/${r.id}`} className="block">
         <div className="h-40 bg-muted flex items-center justify-center overflow-hidden">
-          {photoUrl ? (
+          {displayPhoto ? (
             <img
-              src={photoUrl}
+              src={displayPhoto}
               alt={r.title}
               className="w-full h-full object-cover"
             />
