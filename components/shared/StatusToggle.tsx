@@ -32,7 +32,6 @@ export default function StatusToggle({
 
   const isVisited = status === "visited" || status === "cooked";
   const isWishlist = status === "wishlist";
-  const noStatus = !status;
 
   // Determine next status on click
   function nextStatus(): string {
