@@ -181,19 +181,8 @@ export default async function HomePage() {
     const addedById = r.added_by ?? "";
     const addedByName = profile?.display_name ?? profile?.username ?? "Someone";
 
-    activities.push({
-      key: `restaurant_added_${r.id}`,
-      type: "restaurant_added",
-      entityId: r.id,
-      entityName: r.name,
-      photoReference: r.photo_reference,
-      addedById,
-      addedByName,
-      date: r.created_at,
-      cuisine: r.cuisine,
-    });
-
     if (r.status === "visited" && r.visited_at) {
+      // Only show the visited event — avoids duplicate when added directly as visited
       activities.push({
         key: `restaurant_visited_${r.id}`,
         type: "restaurant_visited",
@@ -204,6 +193,19 @@ export default async function HomePage() {
         addedByName,
         date: r.visited_at,
         rating: r.my_rating,
+        cuisine: r.cuisine,
+      });
+    } else {
+      // Wishlist: show the "added" event
+      activities.push({
+        key: `restaurant_added_${r.id}`,
+        type: "restaurant_added",
+        entityId: r.id,
+        entityName: r.name,
+        photoReference: r.photo_reference,
+        addedById,
+        addedByName,
+        date: r.created_at,
         cuisine: r.cuisine,
       });
     }
