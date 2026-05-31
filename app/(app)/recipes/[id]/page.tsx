@@ -19,8 +19,11 @@ export default async function RecipeDetailPage({
   const [
     { data: recipe },
     { data: media },
-    { data: { user } },
+    {
+      data: { user },
+    },
     { data: reviewsRaw },
+    { data: memberStatusesRaw },
   ] = await Promise.all([
     supabase.from("recipes").select("*").eq("id", params.id).single(),
     supabase
@@ -31,14 +34,28 @@ export default async function RecipeDetailPage({
     supabase.auth.getUser(),
     supabase
       .from("reviews")
-      .select("id, user_id, rating, notes, profiles:user_id(display_name, username)")
+      .select(
+        "id, user_id, rating, notes, profiles:user_id(display_name, username)"
+      )
       .eq("entity_id", params.id)
       .eq("entity_type", "recipe"),
+    supabase
+      .from("recipe_member_status")
+      .select("user_id, status, profiles:user_id(display_name, username)")
+      .eq("recipe_id", params.id),
   ]);
 
   if (!recipe) notFound();
 
   const reviews = (reviewsRaw ?? []) as unknown as Review[];
+  const memberStatuses = (memberStatusesRaw ?? []) as unknown as {
+    user_id: string;
+    status: string;
+    profiles: { display_name: string | null; username: string | null } | null;
+  }[];
+
+  const myStatus =
+    memberStatuses.find((ms) => ms.user_id === user!.id)?.status ?? null;
 
   const r = recipe as Recipe;
   const ingredients = r.ingredients as
@@ -79,8 +96,43 @@ export default async function RecipeDetailPage({
       <div className="space-y-2 mb-4">
         <div className="flex items-start justify-between gap-3">
           <h1 className="text-2xl font-bold">{r.title}</h1>
-          <StatusToggle id={r.id} type="recipe" currentStatus={r.status} />
+          <StatusToggle
+            id={r.id}
+            type="recipe"
+            currentStatus={myStatus}
+            userId={user!.id}
+          />
         </div>
+
+        {/* Per-member status pills */}
+        {memberStatuses.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {memberStatuses.map((ms) => {
+              const isMe = ms.user_id === user!.id;
+              const name = isMe
+                ? "You"
+                : ms.profiles?.display_name ??
+                  ms.profiles?.username ??
+                  "Member";
+              const isCooked = ms.status === "cooked";
+              return (
+                <span
+                  key={ms.user_id}
+                  className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full ${
+                    isCooked
+                      ? "bg-green-100 text-green-700"
+                      : "bg-primary/10 text-primary"
+                  }`}
+                >
+                  {isCooked ? "✓" : "★"} {name}{" "}
+                  <span className="font-normal opacity-70">
+                    {isCooked ? "Cooked" : "Wishlist"}
+                  </span>
+                </span>
+              );
+            })}
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2 items-center">
           {r.cuisine && <Badge variant="secondary">{r.cuisine}</Badge>}

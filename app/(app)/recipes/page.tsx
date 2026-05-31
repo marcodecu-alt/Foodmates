@@ -1,10 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveGroupId } from "@/lib/activeGroup";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import RecipeCard from "@/components/recipes/RecipeCard";
 import AddRecipeModal from "@/components/recipes/AddRecipeModal";
-import { BookOpen } from "lucide-react";
-import type { Recipe } from "@/lib/supabase/types";
+import RecipesView, {
+  type RecipeWithStatuses,
+  type FilterMember,
+} from "@/components/recipes/RecipesView";
 
 export default async function RecipesPage() {
   const supabase = createClient();
@@ -18,20 +18,46 @@ export default async function RecipesPage() {
     .eq("user_id", user!.id);
 
   const groupIds = memberships?.map((m) => m.group_id) ?? [];
-
-  // Filter by the active group only
   const cookieGroupId = getActiveGroupId();
   const activeGroupId =
     groupIds.find((id) => id === cookieGroupId) ?? groupIds[0] ?? null;
 
-  const { data: recipes } = await supabase
+  const { data: recipesRaw } = await supabase
     .from("recipes")
-    .select("*")
+    .select(
+      "*, profiles:added_by(display_name, username), member_statuses:recipe_member_status(user_id, status, profiles:user_id(display_name, username))"
+    )
     .eq("group_id", activeGroupId ?? "none")
     .order("created_at", { ascending: false });
 
-  const wishlist = (recipes ?? []).filter((r) => r.status === "wishlist");
-  const cooked = (recipes ?? []).filter((r) => r.status === "cooked");
+  const recipes = (recipesRaw ?? []) as unknown as RecipeWithStatuses[];
+
+  // Build filter members from member_statuses data (no extra query needed)
+  const memberMap = new Map<string, string>();
+  for (const r of recipes) {
+    for (const ms of r.member_statuses ?? []) {
+      if (!memberMap.has(ms.user_id)) {
+        const name =
+          (ms.profiles as unknown as { display_name: string | null; username: string | null } | null)
+            ?.display_name ??
+          (ms.profiles as unknown as { display_name: string | null; username: string | null } | null)
+            ?.username ??
+          "Member";
+        memberMap.set(ms.user_id, name);
+      }
+    }
+  }
+
+  const filterMembers: FilterMember[] = Array.from(memberMap.entries())
+    .map(([id, name]) => ({
+      id,
+      name: id === user!.id ? "You" : name,
+    }))
+    .sort((a, b) => {
+      if (a.id === user!.id) return -1;
+      if (b.id === user!.id) return 1;
+      return a.name.localeCompare(b.name);
+    });
 
   return (
     <div className="container py-6 space-y-5">
@@ -40,50 +66,11 @@ export default async function RecipesPage() {
         <AddRecipeModal />
       </div>
 
-      <Tabs defaultValue="wishlist">
-        <TabsList>
-          <TabsTrigger value="wishlist">
-            Wishlist ({wishlist.length})
-          </TabsTrigger>
-          <TabsTrigger value="cooked">Cooked ({cooked.length})</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="wishlist" className="mt-4">
-          {wishlist.length === 0 ? (
-            <div className="rounded-xl border-2 border-dashed p-12 text-center">
-              <BookOpen className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="font-medium">Your recipe wishlist is empty</p>
-              <p className="text-sm text-muted-foreground">
-                Clip recipes from any website or add them manually
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {wishlist.map((r) => (
-                <RecipeCard key={r.id} recipe={r as Recipe} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="cooked" className="mt-4">
-          {cooked.length === 0 ? (
-            <div className="rounded-xl border-2 border-dashed p-12 text-center">
-              <BookOpen className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="font-medium">No cooked recipes yet</p>
-              <p className="text-sm text-muted-foreground">
-                Mark a recipe as cooked when you make it
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {cooked.map((r) => (
-                <RecipeCard key={r.id} recipe={r as Recipe} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+      <RecipesView
+        recipes={recipes}
+        userId={user!.id}
+        filterMembers={filterMembers}
+      />
     </div>
   );
 }

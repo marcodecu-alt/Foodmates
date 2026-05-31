@@ -144,9 +144,29 @@ export default async function HomePage() {
         profiles: { id: string; display_name: string | null; username: string | null } | null;
       }[] };
 
-  // Build restaurant info lookup
+  // --- Fetch per-member recipe statuses for feed events ---
+  const { data: recipeMemberStatusEvents } = recipeIds.length > 0
+    ? await supabase
+        .from("recipe_member_status")
+        .select("recipe_id, user_id, status, cooked_at, created_at, profiles:user_id(id, display_name, username)")
+        .in("recipe_id", recipeIds)
+        .order("created_at", { ascending: false })
+        .limit(40)
+    : { data: [] as {
+        recipe_id: string;
+        user_id: string;
+        status: string;
+        cooked_at: string | null;
+        created_at: string;
+        profiles: { id: string; display_name: string | null; username: string | null } | null;
+      }[] };
+
+  // Build restaurant & recipe info lookups
   const restaurantInfo = new Map(
     (restaurants ?? []).map((r) => [r.id, r])
+  );
+  const recipeInfo = new Map(
+    (recipes ?? []).map((r) => [r.id, r])
   );
 
   const [{ data: restaurantMedia }, { data: recipeMedia }] = await Promise.all([
@@ -235,35 +255,39 @@ export default async function HomePage() {
     }
   }
 
-  for (const r of recipes ?? []) {
-    const profile = r.profiles as unknown as {
+  // One feed event per person per recipe (covers joins too)
+  for (const ms of recipeMemberStatusEvents ?? []) {
+    const profile = ms.profiles as unknown as {
       id: string;
       display_name: string | null;
       username: string | null;
     } | null;
-    const addedById = r.added_by ?? "";
+    const r = recipeInfo.get(ms.recipe_id);
+    if (!r) continue;
+
+    const addedById = ms.user_id;
     const addedByName = profile?.display_name ?? profile?.username ?? "Someone";
 
-    activities.push({
-      key: `recipe_added_${r.id}`,
-      type: "recipe_added",
-      entityId: r.id,
-      entityName: r.title,
-      addedById,
-      addedByName,
-      date: r.created_at,
-      cuisine: r.cuisine,
-    });
-
-    if (r.status === "cooked" && r.cooked_at) {
+    if (ms.status === "cooked" && ms.cooked_at) {
       activities.push({
-        key: `recipe_cooked_${r.id}`,
+        key: `recipe_cooked_${r.id}_${ms.user_id}`,
         type: "recipe_cooked",
         entityId: r.id,
         entityName: r.title,
         addedById,
         addedByName,
-        date: r.cooked_at,
+        date: ms.cooked_at,
+        cuisine: r.cuisine,
+      });
+    } else {
+      activities.push({
+        key: `recipe_added_${r.id}_${ms.user_id}`,
+        type: "recipe_added",
+        entityId: r.id,
+        entityName: r.title,
+        addedById,
+        addedByName,
+        date: ms.created_at,
         cuisine: r.cuisine,
       });
     }
