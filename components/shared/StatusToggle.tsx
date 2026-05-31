@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle, Circle } from "lucide-react";
+import { CheckCircle, Circle, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -11,72 +11,92 @@ type EntityType = "restaurant" | "recipe";
 interface StatusToggleProps {
   id: string;
   type: EntityType;
-  currentStatus: string;
+  /** Pass the current user's personal status (null = not yet added to their list) */
+  currentStatus: string | null;
+  /** Required for type="restaurant" — the logged-in user's ID */
+  userId?: string;
   onStatusChange?: (newStatus: string) => void;
 }
-
-const config = {
-  restaurant: {
-    table: "restaurants",
-    statusA: "wishlist",
-    statusB: "visited",
-    labelB: "Visited",
-    actionLabel: "Mark as visited",
-    timestampField: "visited_at",
-  },
-  recipe: {
-    table: "recipes",
-    statusA: "wishlist",
-    statusB: "cooked",
-    labelB: "Cooked",
-    actionLabel: "Mark as cooked",
-    timestampField: "cooked_at",
-  },
-};
 
 export default function StatusToggle({
   id,
   type,
   currentStatus,
+  userId,
   onStatusChange,
 }: StatusToggleProps) {
-  const [status, setStatus] = useState(currentStatus);
+  const [status, setStatus] = useState<string | null>(currentStatus);
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
   const router = useRouter();
-  const cfg = config[type];
-  const isActive = status === cfg.statusB; // visited / cooked
+
+  const isVisited = status === "visited" || status === "cooked";
+  const isWishlist = status === "wishlist";
+  const noStatus = !status;
+
+  // Determine next status on click
+  function nextStatus(): string {
+    if (type === "recipe") {
+      return status === "cooked" ? "wishlist" : "cooked";
+    }
+    // restaurant
+    if (!status) return "wishlist";
+    if (status === "wishlist") return "visited";
+    return "wishlist"; // visited → wishlist
+  }
 
   async function toggle() {
-    const newStatus = isActive ? cfg.statusA : cfg.statusB;
+    const newStatus = nextStatus();
     const prevStatus = status;
 
-    // Optimistic update — UI reflects change immediately
+    // Optimistic update
     setStatus(newStatus);
     onStatusChange?.(newStatus);
     setLoading(true);
 
-    const update: Record<string, unknown> = {
-      status: newStatus,
-      [cfg.timestampField]: newStatus === cfg.statusB ? new Date().toISOString() : null,
-    };
+    if (type === "restaurant") {
+      const { error } = await supabase
+        .from("restaurant_member_status")
+        .upsert(
+          {
+            restaurant_id: id,
+            user_id: userId!,
+            status: newStatus,
+            visited_at:
+              newStatus === "visited" ? new Date().toISOString() : null,
+          },
+          { onConflict: "restaurant_id,user_id" }
+        );
 
-    const { error } = await supabase
-      .from(cfg.table as "restaurants" | "recipes")
-      .update(update)
-      .eq("id", id);
-
-    if (error) {
-      // Roll back on failure
-      setStatus(prevStatus);
-      onStatusChange?.(prevStatus);
+      if (error) {
+        setStatus(prevStatus);
+        onStatusChange?.(prevStatus ?? "");
+      } else {
+        router.refresh();
+      }
     } else {
-      // Refresh immediately so the card moves to the correct tab now,
-      // without waiting for the RealtimeProvider subscription
-      router.refresh();
+      // Recipe: keep updating the recipes row
+      const { error } = await supabase
+        .from("recipes")
+        .update({
+          status: newStatus,
+          cooked_at: newStatus === "cooked" ? new Date().toISOString() : null,
+        })
+        .eq("id", id);
+
+      if (error) {
+        setStatus(prevStatus);
+        onStatusChange?.(prevStatus ?? "");
+      } else {
+        router.refresh();
+      }
     }
     setLoading(false);
   }
+
+  // Label copy
+  const actionLabel =
+    type === "recipe" ? "Mark as cooked" : "Mark as visited";
 
   return (
     <button
@@ -84,21 +104,29 @@ export default function StatusToggle({
       disabled={loading}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all border w-full justify-center",
-        isActive
+        isVisited
           ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
-          : "bg-muted/60 text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary hover:border-primary/20"
+          : isWishlist
+          ? "bg-muted/60 text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary hover:border-primary/20"
+          : // no status yet
+            "bg-muted/40 text-muted-foreground/70 border-dashed border-border hover:bg-primary/10 hover:text-primary hover:border-primary/20"
       )}
     >
-      {isActive ? (
+      {isVisited ? (
         <>
           <CheckCircle className="h-3.5 w-3.5" />
-          {cfg.labelB}
+          {type === "recipe" ? "Cooked" : "Visited"}
           <span className="opacity-50 font-normal">· undo</span>
+        </>
+      ) : isWishlist ? (
+        <>
+          <Circle className="h-3.5 w-3.5" />
+          {actionLabel}
         </>
       ) : (
         <>
-          <Circle className="h-3.5 w-3.5" />
-          {cfg.actionLabel}
+          <Plus className="h-3.5 w-3.5" />
+          Add to my list
         </>
       )}
     </button>

@@ -4,12 +4,18 @@ import Link from "next/link";
 import { Star, User } from "lucide-react";
 import type { Restaurant } from "@/lib/supabase/types";
 import StatusToggle from "@/components/shared/StatusToggle";
-import StarRating from "@/components/shared/StarRating";
 import { cn } from "@/lib/utils";
 
+export interface MemberStatusItem {
+  user_id: string;
+  status: string;
+  profiles: { display_name: string | null; username: string | null } | null;
+}
+
 interface RestaurantCardProps {
-  restaurant: Restaurant;
+  restaurant: Restaurant & { member_statuses?: MemberStatusItem[] };
   addedByName?: string | null;
+  userId: string;
 }
 
 function PriceLevel({ level }: { level: number | null }) {
@@ -25,8 +31,21 @@ function PriceLevel({ level }: { level: number | null }) {
 export default function RestaurantCard({
   restaurant: r,
   addedByName,
+  userId,
 }: RestaurantCardProps) {
-  const isWishlist = r.status === "wishlist";
+  const memberStatuses = r.member_statuses ?? [];
+  const myStatus =
+    memberStatuses.find((ms) => ms.user_id === userId)?.status ?? null;
+
+  // Other members (not me)
+  const others = memberStatuses.filter((ms) => ms.user_id !== userId);
+
+  const badgeLabel =
+    myStatus === "visited"
+      ? "Visited"
+      : myStatus === "wishlist"
+      ? "Wishlist"
+      : null;
 
   return (
     <div className="rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
@@ -46,19 +65,21 @@ export default function RestaurantCard({
             <span className="text-4xl">🍽️</span>
           )}
 
-          {/* Status badge */}
-          <div className="absolute top-2.5 right-2.5">
-            <span
-              className={cn(
-                "text-[10px] font-semibold px-2 py-0.5 rounded-full",
-                isWishlist
-                  ? "bg-primary/15 text-primary"
-                  : "bg-white/90 text-foreground"
-              )}
-            >
-              {isWishlist ? "Wishlist" : "Visited"}
-            </span>
-          </div>
+          {/* My status badge */}
+          {badgeLabel && (
+            <div className="absolute top-2.5 right-2.5">
+              <span
+                className={cn(
+                  "text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                  myStatus === "wishlist"
+                    ? "bg-primary/15 text-primary"
+                    : "bg-white/90 text-foreground"
+                )}
+              >
+                {badgeLabel}
+              </span>
+            </div>
+          )}
         </div>
       </Link>
 
@@ -66,7 +87,10 @@ export default function RestaurantCard({
       <div className="p-3 space-y-1.5">
         {/* Name + price level */}
         <div className="flex items-start justify-between gap-2">
-          <Link href={`/restaurants/${r.id}`} className="hover:underline min-w-0">
+          <Link
+            href={`/restaurants/${r.id}`}
+            className="hover:underline min-w-0"
+          >
             <p className="font-semibold text-sm leading-tight line-clamp-2">
               {r.name}
             </p>
@@ -79,34 +103,54 @@ export default function RestaurantCard({
           <p className="text-xs text-muted-foreground">{r.cuisine}</p>
         )}
 
-        {/* ── Rating: Google for wishlist, personal for visited ── */}
-        {isWishlist ? (
-          r.google_rating ? (
-            <div className="flex items-center gap-1">
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400 flex-shrink-0" />
-              <span className="text-xs font-medium text-muted-foreground">
-                {r.google_rating}
-              </span>
-              <span className="text-[10px] text-muted-foreground/60">Google</span>
-            </div>
-          ) : null
-        ) : r.my_rating !== null && r.my_rating !== undefined ? (
-          <StarRating value={r.my_rating} readonly size="sm" />
-        ) : (
-          <p className="text-[11px] text-muted-foreground/60 italic">
-            No rating yet
-          </p>
+        {/* Google rating */}
+        {r.google_rating ? (
+          <div className="flex items-center gap-1">
+            <Star className="h-3 w-3 fill-amber-400 text-amber-400 flex-shrink-0" />
+            <span className="text-xs font-medium text-muted-foreground">
+              {r.google_rating}
+            </span>
+            <span className="text-[10px] text-muted-foreground/60">Google</span>
+          </div>
+        ) : null}
+
+        {/* Who else has this in their list */}
+        {others.length > 0 && (
+          <div className="flex flex-wrap gap-x-2 gap-y-0.5 pt-0.5">
+            {others.map((ms) => {
+              const name =
+                ms.profiles?.display_name ??
+                ms.profiles?.username ??
+                "Member";
+              return (
+                <span
+                  key={ms.user_id}
+                  className="flex items-center gap-0.5 text-[10px] text-muted-foreground"
+                >
+                  <span className="font-medium">{name}</span>
+                  <span>
+                    {ms.status === "visited" ? " ✓" : " ★"}
+                  </span>
+                </span>
+              );
+            })}
+          </div>
         )}
 
-        {/* Added by */}
-        {addedByName && (
+        {/* Added by (only show if no member statuses or if it's the only person) */}
+        {addedByName && memberStatuses.length === 0 && (
           <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
             <User className="h-3 w-3 flex-shrink-0" />
             <span className="truncate">{addedByName}</span>
           </div>
         )}
 
-        <StatusToggle id={r.id} type="restaurant" currentStatus={r.status} />
+        <StatusToggle
+          id={r.id}
+          type="restaurant"
+          currentStatus={myStatus}
+          userId={userId}
+        />
       </div>
     </div>
   );

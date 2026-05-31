@@ -143,6 +143,32 @@ export interface Database {
           created_at?: string;
         };
       };
+      restaurant_member_status: {
+        Row: {
+          id: string;
+          restaurant_id: string;
+          user_id: string;
+          status: string;
+          visited_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          restaurant_id: string;
+          user_id: string;
+          status: string;
+          visited_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          restaurant_id?: string;
+          user_id?: string;
+          status?: string;
+          visited_at?: string | null;
+          created_at?: string;
+        };
+      };
       restaurant_media: {
         Row: {
           id: string;
@@ -334,3 +360,4 @@ export type Recipe = Database["public"]["Tables"]["recipes"]["Row"];
 export type RecipeMedia = Database["public"]["Tables"]["recipe_media"]["Row"];
 export type Message = Database["public"]["Tables"]["messages"]["Row"];
 export type DBReview = Database["public"]["Tables"]["reviews"]["Row"];
+export type RestaurantMemberStatus = Database["public"]["Tables"]["restaurant_member_status"]["Row"];

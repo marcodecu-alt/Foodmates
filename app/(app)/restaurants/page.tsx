@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveGroupId } from "@/lib/activeGroup";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import RestaurantCard from "@/components/restaurants/RestaurantCard";
+import RestaurantCard, {
+  type MemberStatusItem,
+} from "@/components/restaurants/RestaurantCard";
 import AddRestaurantModal from "@/components/restaurants/AddRestaurantModal";
 import { MapPin, UtensilsCrossed } from "lucide-react";
 import type { Restaurant } from "@/lib/supabase/types";
@@ -17,16 +19,13 @@ function extractCity(address: string | null | undefined): string {
 
   for (let i = parts.length - 1; i >= 0; i--) {
     const p = parts[i];
-    // Skip country names
     if (
       /^(UK|US|GB|United Kingdom|United States|France|Italy|Spain|Germany|Japan|Australia|Netherlands|Portugal|Greece)$/i.test(
         p
       )
     )
       continue;
-    // Strip UK-style trailing postal code: "London W1D 4DH" → "London"
     const stripped = p.replace(/\s+[A-Z]{1,2}\d[\w\s]*$/i, "").trim();
-    // Strip leading numeric postal code (European): "80055 Naples" → "Naples"
     const city = stripped.replace(/^\d[\d\s]*/, "").trim();
     if (city.length > 1 && !/^\d+$/.test(city)) return city;
   }
@@ -34,20 +33,20 @@ function extractCity(address: string | null | undefined): string {
   return "Other";
 }
 
-type RestaurantWithProfile = Restaurant & {
+type RestaurantWithStatuses = Restaurant & {
   profiles: { display_name: string | null; username: string } | null;
+  member_statuses: MemberStatusItem[];
 };
 
 function groupByCity(
-  restaurants: RestaurantWithProfile[]
-): [string, RestaurantWithProfile[]][] {
-  const map = new Map<string, RestaurantWithProfile[]>();
+  restaurants: RestaurantWithStatuses[]
+): [string, RestaurantWithStatuses[]][] {
+  const map = new Map<string, RestaurantWithStatuses[]>();
   for (const r of restaurants) {
     const city = extractCity(r.address);
     if (!map.has(city)) map.set(city, []);
     map.get(city)!.push(r);
   }
-  // Sort groups alphabetically, "Other" always last
   return Array.from(map.entries()).sort(([a], [b]) => {
     if (a === "Other") return 1;
     if (b === "Other") return -1;
@@ -68,10 +67,12 @@ function LocationSection({
   city,
   restaurants,
   showCity,
+  userId,
 }: {
   city: string;
-  restaurants: RestaurantWithProfile[];
+  restaurants: RestaurantWithStatuses[];
   showCity: boolean;
+  userId: string;
 }) {
   return (
     <div className="space-y-3">
@@ -94,6 +95,7 @@ function LocationSection({
               key={r.id}
               restaurant={r}
               addedByName={addedByName}
+              userId={userId}
             />
           );
         })}
@@ -114,24 +116,36 @@ export default async function RestaurantsPage() {
     .eq("user_id", user!.id);
 
   const groupIds = memberships?.map((m) => m.group_id) ?? [];
-
-  // Filter by the active group only
   const cookieGroupId = getActiveGroupId();
   const activeGroupId =
     groupIds.find((id) => id === cookieGroupId) ?? groupIds[0] ?? null;
 
   const { data: restaurants } = await supabase
     .from("restaurants")
-    .select("*, profiles:added_by(display_name, username)")
+    .select(
+      `*, profiles:added_by(display_name, username),
+       member_statuses:restaurant_member_status(
+         user_id, status, visited_at,
+         profiles:user_id(display_name, username)
+       )`
+    )
     .eq("group_id", activeGroupId ?? "none")
     .order("created_at", { ascending: false });
 
-  const all = (restaurants ?? []) as unknown as RestaurantWithProfile[];
-  const wishlist = all.filter((r) => r.status === "wishlist");
-  const visited = all.filter((r) => r.status === "visited");
+  const userId = user!.id;
+  const all = (restaurants ?? []) as unknown as RestaurantWithStatuses[];
 
-  const wishlistGroups = groupByCity(wishlist);
-  const visitedGroups = groupByCity(visited);
+  // Filter by current user's personal status
+  const myWishlist = all.filter(
+    (r) => r.member_statuses.find((ms) => ms.user_id === userId)?.status === "wishlist"
+  );
+  const myVisited = all.filter(
+    (r) => r.member_statuses.find((ms) => ms.user_id === userId)?.status === "visited"
+  );
+
+  const allGroups = groupByCity(all);
+  const wishlistGroups = groupByCity(myWishlist);
+  const visitedGroups = groupByCity(myVisited);
 
   return (
     <div className="container py-6 space-y-5">
@@ -140,18 +154,40 @@ export default async function RestaurantsPage() {
         <AddRestaurantModal />
       </div>
 
-      <Tabs defaultValue="wishlist">
+      <Tabs defaultValue="all">
         <TabsList>
+          <TabsTrigger value="all">All ({all.length})</TabsTrigger>
           <TabsTrigger value="wishlist">
-            Wishlist ({wishlist.length})
+            Wishlist ({myWishlist.length})
           </TabsTrigger>
-          <TabsTrigger value="visited">Visited ({visited.length})</TabsTrigger>
+          <TabsTrigger value="visited">
+            Visited ({myVisited.length})
+          </TabsTrigger>
         </TabsList>
 
-        {/* ── Wishlist ── */}
+        {/* ── All group restaurants ── */}
+        <TabsContent value="all" className="mt-4">
+          {all.length === 0 ? (
+            <EmptyState message="No restaurants added yet — be the first to add one!" />
+          ) : (
+            <div className="space-y-8">
+              {allGroups.map(([city, items]) => (
+                <LocationSection
+                  key={city}
+                  city={city}
+                  restaurants={items}
+                  showCity={allGroups.length > 1}
+                  userId={userId}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ── My wishlist ── */}
         <TabsContent value="wishlist" className="mt-4">
-          {wishlist.length === 0 ? (
-            <EmptyState message="Your wishlist is empty — search and add restaurants you want to try" />
+          {myWishlist.length === 0 ? (
+            <EmptyState message="Your wishlist is empty — add restaurants you want to try" />
           ) : (
             <div className="space-y-8">
               {wishlistGroups.map(([city, items]) => (
@@ -160,15 +196,16 @@ export default async function RestaurantsPage() {
                   city={city}
                   restaurants={items}
                   showCity={wishlistGroups.length > 1}
+                  userId={userId}
                 />
               ))}
             </div>
           )}
         </TabsContent>
 
-        {/* ── Visited ── */}
+        {/* ── My visited ── */}
         <TabsContent value="visited" className="mt-4">
-          {visited.length === 0 ? (
+          {myVisited.length === 0 ? (
             <EmptyState message="No visited restaurants yet — mark wishlist items as visited when you go" />
           ) : (
             <div className="space-y-8">
@@ -178,6 +215,7 @@ export default async function RestaurantsPage() {
                   city={city}
                   restaurants={items}
                   showCity={visitedGroups.length > 1}
+                  userId={userId}
                 />
               ))}
             </div>

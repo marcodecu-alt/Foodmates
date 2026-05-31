@@ -10,13 +10,19 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import RestaurantSearch from "./RestaurantSearch";
-import { Plus, PencilLine, Camera, X } from "lucide-react";
+import { Plus, PencilLine, Camera, X, UserPlus } from "lucide-react";
 import { useActiveGroup } from "@/lib/hooks/useActiveGroup";
 import { getOrCreatePersonalGroup } from "@/lib/hooks/useOrCreateGroup";
 import StarRating from "@/components/shared/StarRating";
@@ -35,6 +41,12 @@ interface PlaceDetails {
   cuisine: string | null;
 }
 
+interface ExistingRestaurant {
+  id: string;
+  name: string;
+  addedByName: string;
+}
+
 export default function AddRestaurantModal() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -48,16 +60,66 @@ export default function AddRestaurantModal() {
   const [manualMode, setManualMode] = useState(false);
   const [myRating, setMyRating] = useState<number | null>(null);
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
+  const [existingRestaurant, setExistingRestaurant] =
+    useState<ExistingRestaurant | null>(null);
   const [form, setForm] = useState<Partial<PlaceDetails> & { notes: string }>({
     notes: "",
   });
 
+  function resetForm() {
+    setForm({ notes: "" });
+    setCity("");
+    setStatus("wishlist");
+    setManualMode(false);
+    setMyRating(null);
+    setPendingPhotos([]);
+    setExistingRestaurant(null);
+    setError(null);
+  }
+
   function handlePlaceSelect(details: PlaceDetails) {
     setForm((prev) => ({ ...prev, ...details }));
+    setExistingRestaurant(null);
   }
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  /** Join an existing restaurant that a partner already added */
+  async function handleJoin(joinStatus: "wishlist" | "visited") {
+    if (!existingRestaurant) return;
+    setLoading(true);
+    setError(null);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const { error: upsertErr } = await supabase
+      .from("restaurant_member_status")
+      .upsert(
+        {
+          restaurant_id: existingRestaurant.id,
+          user_id: user.id,
+          status: joinStatus,
+          visited_at: joinStatus === "visited" ? new Date().toISOString() : null,
+        },
+        { onConflict: "restaurant_id,user_id" }
+      );
+
+    if (upsertErr) {
+      setError(upsertErr.message);
+    } else {
+      setOpen(false);
+      resetForm();
+      router.refresh();
+    }
+    setLoading(false);
   }
 
   async function handleSave() {
@@ -77,7 +139,7 @@ export default function AddRestaurantModal() {
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Validate active group against actual DB membership (guards against stale localStorage/cookie)
+    // Validate active group
     const { data: memberships } = await supabase
       .from("group_members")
       .select("group_id")
@@ -89,11 +151,9 @@ export default function AddRestaurantModal() {
     if (activeGroupId && validGroupIds.includes(activeGroupId)) {
       groupId = activeGroupId;
     } else if (validGroupIds.length > 0) {
-      // Stale localStorage — reset to first valid group
       groupId = validGroupIds[0];
       setActiveGroupId(groupId);
     } else {
-      // No groups yet — auto-create one
       groupId = await getOrCreatePersonalGroup(setActiveGroupId);
     }
 
@@ -103,26 +163,53 @@ export default function AddRestaurantModal() {
       return;
     }
 
-    // Generate a unique place_id for manual entries
-    const placeId = form.place_id ?? `manual_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const placeId =
+      form.place_id ??
+      `manual_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-    // Check for duplicate (only for Google Places entries)
+    // Check for duplicate (Google Places entries only)
     if (form.place_id) {
       const { data: existing } = await supabase
         .from("restaurants")
-        .select("id")
+        .select(
+          "id, name, added_by, status, profiles:added_by(display_name, username)"
+        )
         .eq("group_id", groupId)
         .eq("place_id", placeId)
         .maybeSingle();
 
       if (existing) {
-        setError("This restaurant is already in your list.");
+        // Check if current user already has a status for this restaurant
+        const { data: myExisting } = await supabase
+          .from("restaurant_member_status")
+          .select("status")
+          .eq("restaurant_id", existing.id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (myExisting) {
+          setError(`You already have this in your ${myExisting.status}.`);
+          setLoading(false);
+          return;
+        }
+
+        // Prompt user to join the existing entry
+        const profile = existing.profiles as
+          | { display_name: string | null; username: string | null }
+          | null;
+        setExistingRestaurant({
+          id: existing.id,
+          name: existing.name,
+          addedByName:
+            profile?.display_name ?? profile?.username ?? "Someone",
+        });
         setLoading(false);
         return;
       }
     }
 
-    const { data: inserted, error } = await supabase
+    // Create a brand-new restaurant
+    const { data: inserted, error: insertErr } = await supabase
       .from("restaurants")
       .insert({
         group_id: groupId,
@@ -146,11 +233,23 @@ export default function AddRestaurantModal() {
       .select("id")
       .single();
 
-    if (error) {
-      setError(error.message);
-    } else {
-      // Save initial review to per-person reviews table (if rating or notes provided)
-      if (inserted?.id && (myRating !== null || form.notes.trim())) {
+    if (insertErr) {
+      setError(insertErr.message);
+      setLoading(false);
+      return;
+    }
+
+    if (inserted?.id) {
+      // Create the per-member status row for the person who added it
+      await supabase.from("restaurant_member_status").insert({
+        restaurant_id: inserted.id,
+        user_id: user.id,
+        status,
+        visited_at: status === "visited" ? new Date().toISOString() : null,
+      });
+
+      // Save initial review
+      if (myRating !== null || form.notes.trim()) {
         await supabase.from("reviews").upsert(
           {
             entity_id: inserted.id,
@@ -163,8 +262,8 @@ export default function AddRestaurantModal() {
         );
       }
 
-      // Upload any queued photos
-      if (pendingPhotos.length > 0 && inserted?.id) {
+      // Upload queued photos
+      if (pendingPhotos.length > 0) {
         for (const file of pendingPhotos) {
           const ext = file.name.split(".").pop();
           const path = `${user.id}/restaurant/${inserted.id}/${Date.now()}.${ext}`;
@@ -181,20 +280,64 @@ export default function AddRestaurantModal() {
           }
         }
       }
-
-      setOpen(false);
-      setForm({ notes: "" });
-      setCity("");
-      setStatus("wishlist");
-      setManualMode(false);
-      setMyRating(null);
-      setPendingPhotos([]);
-      router.refresh();
     }
+
+    setOpen(false);
+    resetForm();
+    router.refresh();
     setLoading(false);
   }
 
-  const content = (
+  // ── Join existing restaurant UI ─────────────────────────────────────────
+  const joinContent = existingRestaurant && (
+    <div className="space-y-4 py-2">
+      <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 space-y-1.5">
+        <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm">
+          <UserPlus className="h-4 w-4" />
+          Already in your group
+        </div>
+        <p className="text-sm text-amber-700">
+          <strong>{existingRestaurant.name}</strong> was already added by{" "}
+          <strong>{existingRestaurant.addedByName}</strong>. Choose your
+          status to join their entry — photos and reviews are shared.
+        </p>
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={() => handleJoin("wishlist")}
+          disabled={loading}
+        >
+          ★ Add to Wishlist
+        </Button>
+        <Button
+          className="flex-1"
+          onClick={() => handleJoin("visited")}
+          disabled={loading}
+        >
+          ✓ Mark as Visited
+        </Button>
+      </div>
+
+      <button
+        type="button"
+        className="text-xs text-muted-foreground hover:underline w-full text-center pt-1"
+        onClick={() => {
+          setExistingRestaurant(null);
+          setForm({ notes: "" });
+        }}
+      >
+        Search for a different restaurant
+      </button>
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
+    </div>
+  );
+
+  // ── Regular add form UI ─────────────────────────────────────────────────
+  const formContent = (
     <div className="space-y-4 py-2">
       <div className="space-y-1.5">
         <Label htmlFor="city">City / area</Label>
@@ -204,7 +347,7 @@ export default function AddRestaurantModal() {
           value={city}
           onChange={(e) => {
             setCity(e.target.value);
-            setForm({ notes: form.notes }); // clear selected place when city changes
+            setForm({ notes: form.notes });
           }}
         />
       </div>
@@ -228,13 +371,21 @@ export default function AddRestaurantModal() {
             <Input
               placeholder="e.g. Iberica, Nobu, Dishoom…"
               value={form.name ?? ""}
-              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value, place_id: undefined }))}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  name: e.target.value,
+                  place_id: undefined,
+                }))
+              }
               autoFocus
             />
             <Input
               placeholder="Address (optional)"
               value={form.address ?? ""}
-              onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, address: e.target.value }))
+              }
             />
           </div>
         ) : (
@@ -242,7 +393,6 @@ export default function AddRestaurantModal() {
         )}
       </div>
 
-      {/* Status toggle — always visible once a place is selected or not */}
       <div className="space-y-1.5">
         <Label>Add to</Label>
         <div className="flex rounded-lg bg-muted p-1 gap-1">
@@ -275,7 +425,9 @@ export default function AddRestaurantModal() {
         <div className="rounded-lg bg-muted p-3 text-sm">
           <p className="font-medium">{form.name}</p>
           {form.address && (
-            <p className="text-muted-foreground text-xs mt-0.5">{form.address}</p>
+            <p className="text-muted-foreground text-xs mt-0.5">
+              {form.address}
+            </p>
           )}
           {form.cuisine && (
             <p className="text-muted-foreground text-xs">{form.cuisine}</p>
@@ -285,25 +437,26 @@ export default function AddRestaurantModal() {
 
       {(form.name || manualMode) && (
         <>
-          {/* Rating */}
           <div className="space-y-1.5">
             <Label>My rating (optional)</Label>
             <StarRating value={myRating} onChange={setMyRating} />
           </div>
 
-          {/* Review */}
           <div className="space-y-1.5">
             <Label htmlFor="notes">Review (optional)</Label>
             <Textarea
               id="notes"
-              placeholder={status === "visited" ? "How was it? Any dishes to recommend?" : "Why do you want to try this place?"}
+              placeholder={
+                status === "visited"
+                  ? "How was it? Any dishes to recommend?"
+                  : "Why do you want to try this place?"
+              }
               value={form.notes}
               onChange={(e) => updateField("notes", e.target.value)}
               rows={3}
             />
           </div>
 
-          {/* Photos */}
           <div className="space-y-1.5">
             <Label>Photos (optional)</Label>
             <label className="flex items-center gap-2 cursor-pointer w-fit text-sm text-muted-foreground hover:text-foreground transition-colors border border-dashed border-border rounded-xl px-4 py-2.5 hover:bg-muted/50">
@@ -316,7 +469,10 @@ export default function AddRestaurantModal() {
                 className="hidden"
                 onChange={(e) => {
                   if (e.target.files) {
-                    setPendingPhotos((prev) => [...prev, ...Array.from(e.target.files!)]);
+                    setPendingPhotos((prev) => [
+                      ...prev,
+                      ...Array.from(e.target.files!),
+                    ]);
                   }
                 }}
               />
@@ -332,7 +488,11 @@ export default function AddRestaurantModal() {
                     />
                     <button
                       type="button"
-                      onClick={() => setPendingPhotos((prev) => prev.filter((_, j) => j !== i))}
+                      onClick={() =>
+                        setPendingPhotos((prev) =>
+                          prev.filter((_, j) => j !== i)
+                        )
+                      }
                       className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center shadow"
                     >
                       <X className="h-3 w-3" />
@@ -352,25 +512,42 @@ export default function AddRestaurantModal() {
         onClick={handleSave}
         disabled={loading || !form.name || (!manualMode && !form.place_id)}
       >
-        {loading ? "Saving…" : status === "visited" ? "Save as visited" : "Save to wishlist"}
+        {loading
+          ? "Saving…"
+          : status === "visited"
+          ? "Save as visited"
+          : "Save to wishlist"}
       </Button>
     </div>
   );
+
+  const content = existingRestaurant ? joinContent! : formContent;
 
   return (
     <>
       {/* Mobile: Sheet */}
       <div className="md:hidden">
-        <Sheet open={open} onOpenChange={setOpen}>
+        <Sheet
+          open={open}
+          onOpenChange={(v) => {
+            setOpen(v);
+            if (!v) resetForm();
+          }}
+        >
           <SheetTrigger asChild>
             <Button>
               <Plus className="h-4 w-4" />
               Add restaurant
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="rounded-t-2xl max-h-[90vh] overflow-y-auto">
+          <SheetContent
+            side="bottom"
+            className="rounded-t-2xl max-h-[90vh] overflow-y-auto"
+          >
             <SheetHeader>
-              <SheetTitle>Add restaurant</SheetTitle>
+              <SheetTitle>
+                {existingRestaurant ? "Join restaurant" : "Add restaurant"}
+              </SheetTitle>
             </SheetHeader>
             {content}
           </SheetContent>
@@ -379,7 +556,13 @@ export default function AddRestaurantModal() {
 
       {/* Desktop: Dialog */}
       <div className="hidden md:block">
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog
+          open={open}
+          onOpenChange={(v) => {
+            setOpen(v);
+            if (!v) resetForm();
+          }}
+        >
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4" />
@@ -388,7 +571,9 @@ export default function AddRestaurantModal() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add restaurant</DialogTitle>
+              <DialogTitle>
+                {existingRestaurant ? "Join restaurant" : "Add restaurant"}
+              </DialogTitle>
             </DialogHeader>
             {content}
           </DialogContent>

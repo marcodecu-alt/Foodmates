@@ -12,6 +12,13 @@ import DeleteRestaurantButton from "@/components/restaurants/DeleteRestaurantBut
 import ReviewSection from "@/components/shared/ReviewSection";
 import type { Review } from "@/components/shared/ReviewSection";
 
+type MemberStatusRow = {
+  user_id: string;
+  status: string;
+  visited_at: string | null;
+  profiles: { display_name: string | null; username: string | null } | null;
+};
+
 export default async function RestaurantDetailPage({
   params,
 }: {
@@ -24,6 +31,7 @@ export default async function RestaurantDetailPage({
     { data: media },
     { data: { user } },
     { data: reviewsRaw },
+    { data: memberStatusesRaw },
   ] = await Promise.all([
     supabase.from("restaurants").select("*").eq("id", params.id).single(),
     supabase
@@ -37,13 +45,20 @@ export default async function RestaurantDetailPage({
       .select("id, user_id, rating, notes, profiles:user_id(display_name, username)")
       .eq("entity_id", params.id)
       .eq("entity_type", "restaurant"),
+    supabase
+      .from("restaurant_member_status")
+      .select("user_id, status, visited_at, profiles:user_id(display_name, username)")
+      .eq("restaurant_id", params.id),
   ]);
 
   if (!restaurant) notFound();
 
   const reviews = (reviewsRaw ?? []) as unknown as Review[];
+  const memberStatuses = (memberStatusesRaw ?? []) as unknown as MemberStatusRow[];
 
   const r = restaurant as Restaurant;
+  const myStatus =
+    memberStatuses.find((ms) => ms.user_id === user!.id)?.status ?? null;
 
   return (
     <div className="container py-6 max-w-2xl">
@@ -77,7 +92,12 @@ export default async function RestaurantDetailPage({
       <div className="space-y-2 mb-4">
         <div className="flex items-start justify-between gap-3">
           <h1 className="text-2xl font-bold">{r.name}</h1>
-          <StatusToggle id={r.id} type="restaurant" currentStatus={r.status} />
+          <StatusToggle
+            id={r.id}
+            type="restaurant"
+            currentStatus={myStatus}
+            userId={user!.id}
+          />
         </div>
 
         <div className="flex flex-wrap gap-2 items-center text-sm text-muted-foreground">
@@ -88,9 +108,7 @@ export default async function RestaurantDetailPage({
               {r.google_rating}
             </span>
           )}
-          {r.price_level && (
-            <span>{"$".repeat(r.price_level)}</span>
-          )}
+          {r.price_level && <span>{"$".repeat(r.price_level)}</span>}
         </div>
 
         {r.address && (
@@ -120,6 +138,34 @@ export default async function RestaurantDetailPage({
             <Phone className="h-4 w-4" />
             {r.phone}
           </a>
+        )}
+
+        {/* Member statuses */}
+        {memberStatuses.length > 0 && (
+          <div className="flex flex-wrap gap-3 pt-1">
+            {memberStatuses.map((ms) => {
+              const isMe = ms.user_id === user!.id;
+              const name = isMe
+                ? "You"
+                : ms.profiles?.display_name ??
+                  ms.profiles?.username ??
+                  "Member";
+              const isVisited = ms.status === "visited";
+              return (
+                <span
+                  key={ms.user_id}
+                  className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${
+                    isVisited
+                      ? "bg-green-100 text-green-700"
+                      : "bg-primary/10 text-primary"
+                  }`}
+                >
+                  {isVisited ? "✓" : "★"} {name}:{" "}
+                  {isVisited ? "Visited" : "Wishlist"}
+                </span>
+              );
+            })}
+          </div>
         )}
       </div>
 
