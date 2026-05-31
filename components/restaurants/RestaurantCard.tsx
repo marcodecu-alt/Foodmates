@@ -111,9 +111,9 @@ export default function RestaurantCard({
           </div>
         ) : null}
 
-        {/* Member statuses — show everyone including current user */}
+        {/* Member statuses — one row per person */}
         {memberStatuses.length > 0 ? (
-          <div className="flex flex-wrap gap-x-2 gap-y-0.5 pt-0.5">
+          <div className="space-y-0.5 pt-0.5">
             {memberStatuses.map((ms) => {
               const isMe = ms.user_id === userId;
               const name = isMe
@@ -121,19 +121,26 @@ export default function RestaurantCard({
                 : ms.profiles?.display_name ??
                   ms.profiles?.username ??
                   "Member";
+              const isVisited = ms.status === "visited";
               return (
-                <span
+                <div
                   key={ms.user_id}
-                  className="flex items-center gap-0.5 text-[10px] text-muted-foreground"
+                  className={`flex items-center gap-1.5 text-[11px] font-medium ${
+                    isVisited ? "text-green-600" : "text-primary"
+                  }`}
                 >
-                  <span className="font-medium">{name}</span>
-                  <span>{ms.status === "visited" ? " ✓" : " ★"}</span>
-                </span>
+                  <span className="w-3 text-center flex-shrink-0">
+                    {isVisited ? "✓" : "★"}
+                  </span>
+                  <span className="font-semibold">{name}</span>
+                  <span className="font-normal opacity-70">
+                    {isVisited ? "Visited" : "Wishlist"}
+                  </span>
+                </div>
               );
             })}
           </div>
         ) : (
-          /* Fallback: show who added it if no status rows yet */
           addedByName && (
             <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <User className="h-3 w-3 flex-shrink-0" />
