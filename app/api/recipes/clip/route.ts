@@ -132,13 +132,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ recipe, confidence, cover_photo_url: cover_photo_url ?? null });
   } catch (err) {
-    console.error("Recipe clip error:", err);
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error("Recipe clip error:", errMsg);
     return NextResponse.json({
       recipe: buildEmptyRecipe(),
       confidence: "low",
       cover_photo_url: null,
-      error:
-        "Could not extract recipe automatically. Please fill in the details.",
+      error: errMsg,
     });
   }
 }

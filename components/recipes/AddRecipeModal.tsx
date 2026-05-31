@@ -81,10 +81,14 @@ export default function AddRecipeModal() {
     setExistingRecipe(null);
   }
 
-  function handleClipError(url: string) {
+  function handleClipError(url: string, errorDetail?: string) {
     setSourceUrl(url);
     setConfidence("low");
-    setError("Couldn't extract recipe from this page — the site may block automated access. You can fill in the details manually below.");
+    setError(
+      errorDetail
+        ? `Import failed: ${errorDetail}`
+        : "Couldn't extract recipe from this page — the site may block automated access. You can fill in the details manually below."
+    );
   }
 
   function updateField(field: keyof RecipeData, value: unknown) {

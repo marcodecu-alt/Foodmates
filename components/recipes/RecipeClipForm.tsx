@@ -25,7 +25,7 @@ interface RecipeClipFormProps {
     sourceUrl: string,
     coverPhotoUrl: string | null
   ) => void;
-  onError: (sourceUrl: string) => void;
+  onError: (sourceUrl: string, errorDetail?: string) => void;
 }
 
 export default function RecipeClipForm({ onResult, onError }: RecipeClipFormProps) {
@@ -54,7 +54,8 @@ export default function RecipeClipForm({ onResult, onError }: RecipeClipFormProp
 
       // If title is empty the extraction failed — treat as error
       if (!data.recipe?.title) {
-        onError(target);
+        // Pass the real error message up so the user can see it
+        onError(target, data.error ?? undefined);
         return;
       }
 
