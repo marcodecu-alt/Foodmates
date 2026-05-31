@@ -194,7 +194,7 @@ export default function AddRestaurantModal() {
         }
 
         // Prompt user to join the existing entry
-        const profile = existing.profiles as
+        const profile = existing.profiles as unknown as
           | { display_name: string | null; username: string | null }
           | null;
         setExistingRestaurant({
