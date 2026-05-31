@@ -8,6 +8,7 @@ import MediaUpload from "@/components/shared/MediaUpload";
 import type { Recipe, RecipeMedia } from "@/lib/supabase/types";
 import ReviewSection from "@/components/shared/ReviewSection";
 import type { Review } from "@/components/shared/ReviewSection";
+import DeleteRecipeButton from "@/components/recipes/DeleteRecipeButton";
 
 export default async function RecipeDetailPage({
   params,
@@ -96,12 +97,17 @@ export default async function RecipeDetailPage({
       <div className="space-y-2 mb-4">
         <div className="flex items-start justify-between gap-3">
           <h1 className="text-2xl font-bold">{r.title}</h1>
-          <StatusToggle
-            id={r.id}
-            type="recipe"
-            currentStatus={myStatus}
-            userId={user!.id}
-          />
+          <div className="flex items-center gap-1 shrink-0">
+            <StatusToggle
+              id={r.id}
+              type="recipe"
+              currentStatus={myStatus}
+              userId={user!.id}
+            />
+            {r.added_by === user!.id && (
+              <DeleteRecipeButton recipeId={r.id} />
+            )}
+          </div>
         </div>
 
         {/* Per-member status pills */}
